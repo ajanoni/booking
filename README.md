@@ -1,0 +1,53 @@
+# booking project
+
+Booking system using reactive Quarkus.
+
+It is still in progress.
+
+This project uses Quarkus, the Supersonic Subatomic Java Framework.
+
+If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
+
+## Running the application in dev mode
+
+You can run your application in dev mode that enables live coding using:
+```shell script
+./gradlew quarkusDev
+```
+
+## Packaging and running the application
+
+The application can be packaged using:
+```shell script
+./gradlew quarkusBuild
+```
+It produces the `booking-1.0.0-SNAPSHOT-runner.jar` file in the `/build` directory.
+Be aware that it?s not an _?ber-jar_ as the dependencies are copied into the `build/lib` directory.
+If you want to build an _?ber-jar_, just add the `--uber-jar` option to the command line:
+```shell script
+./gradlew quarkusBuild --uber-jar
+```
+
+The application is now runnable using `java -jar build/booking-1.0.0-SNAPSHOT-runner.jar`.
+
+## Creating a native executable
+
+You can create a native executable using: 
+```shell script
+./gradlew build -Dquarkus.package.type=native
+```
+
+Or, if you don't have GraalVM installed, you can run the native executable build in a container using: 
+```shell script
+./gradlew build -Dquarkus.package.type=native -Dquarkus.native.container-build=true
+```
+
+You can then execute your native executable with: `./build/booking-1.0.0-SNAPSHOT-runner`
+
+If you want to learn more about building native executables, please consult https://quarkus.io/guides/gradle-tooling.
+
+# RESTEasy JAX-RS
+
+Guide: https://quarkus.io/guides/rest-json
+
+

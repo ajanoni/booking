@@ -1,0 +1,10 @@
+quarkus:
+  swagger-ui:
+    always-include: true
+    path: /swagger
+  datasource:
+      reactive:
+        url: mysql:///booking
+      db-kind: mysql
+  log:
+    level: DEBUG
