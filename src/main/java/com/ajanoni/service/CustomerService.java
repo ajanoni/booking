@@ -5,13 +5,17 @@ import com.ajanoni.repository.CustomerRepository;
 import com.ajanoni.rest.dto.ReservationCommand;
 import io.smallrye.mutiny.Uni;
 import java.time.Duration;
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
 
+@ApplicationScoped
 public class CustomerService {
 
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
 
     private final CustomerRepository customerRepository;
 
+    @Inject
     public CustomerService(CustomerRepository customerRepository) {
         this.customerRepository = customerRepository;
     }

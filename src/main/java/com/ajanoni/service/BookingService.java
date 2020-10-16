@@ -1,5 +1,6 @@
 package com.ajanoni.service;
 
+import com.ajanoni.exception.ReservationRequestException;
 import com.ajanoni.model.Customer;
 import com.ajanoni.model.Reservation;
 import com.ajanoni.repository.ReservationRepository;
@@ -9,7 +10,9 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.chrono.ChronoLocalDate;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.Temporal;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -20,6 +23,11 @@ import javax.inject.Inject;
 public class BookingService {
 
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
+    private static final int MAX_DAYS_ALLOWED = 3;
+    private static final int START_RESERVATION_OFFSET = 1;
+    private static final int MONTHS_WINDOW_ALLOWED = 1;
+    private static final String RESERVATION_CONFLICT = "Another reservation has been "
+            + "made for your selected dates.";
 
     private final CustomerService customerService;
     private final ReservationRepository reservationRepository;
@@ -31,19 +39,7 @@ public class BookingService {
     }
 
     public Uni<String> createReservation(ReservationCommand reservationCommand) {
-        long days = ChronoUnit.DAYS.between(reservationCommand.getArrivalDate(),
-                reservationCommand.getDepartureDate());
-
-        if(reservationCommand.getDepartureDate().isBefore(reservationCommand.getArrivalDate())) {
-
-        }
-
-        if (days > 3) {
-            throw new IllegalArgumentException("test");
-        }
-
-        // one day ahead of arrival (arrival today + 1)
-        // 1 month in advance (departureDate < today + 1 month && arrivalDate < today + 1 month
+        reservationValidation(reservationCommand);
 
         Uni<String> createReservation =
                 customerService.updateOrCreateCustomer(reservationCommand).onItem().transformToUni(id -> {
@@ -57,6 +53,8 @@ public class BookingService {
     }
 
     public Uni<String> updateReservation(String id, ReservationCommand reservationCommand) {
+        reservationValidation(reservationCommand);
+
         Uni<String> updateReservation = reservationRepository.getById(id).onItem().transformToUni(reservation -> {
             Customer updatedCustomer = new Customer(reservation.getId(),
                     reservationCommand.getEmail(),
@@ -92,15 +90,51 @@ public class BookingService {
         return Multi.createFrom().items(resultStream);
     }
 
+
     private Uni<String> reserveExists(ReservationCommand reservationCommand) {
         return reservationRepository.hasReservationBetween(reservationCommand.getArrivalDate(),
                 reservationCommand.getDepartureDate()).flatMap(hasReservation -> {
             if (hasReservation) {
-                return Uni.createFrom().failure(() -> new IllegalArgumentException("exception created at "
-                        + "subscription time"));
+                return Uni.createFrom().failure(() -> new ReservationRequestException(RESERVATION_CONFLICT));
             }
 
             return Uni.createFrom().nothing();
         });
+    }
+
+    private void reservationValidation(ReservationCommand reservationCommand) {
+        LocalDate arrivalDate = reservationCommand.getArrivalDate();
+        LocalDate departureDate = reservationCommand.getDepartureDate();
+
+        checkDatesOrder(arrivalDate, departureDate);
+        checkMaxDays(arrivalDate, departureDate);
+        checkStartOffset(arrivalDate);
+        checkInsideWindow(arrivalDate, departureDate);
+    }
+
+    private void checkInsideWindow(ChronoLocalDate arrivalDate, ChronoLocalDate departureDate) {
+        LocalDate oneMonthAhead = LocalDate.now().plusMonths(MONTHS_WINDOW_ALLOWED);
+        if(departureDate.isAfter(oneMonthAhead) || arrivalDate.isAfter(oneMonthAhead)) {
+            throw new ReservationRequestException("Maximum one month ahead allowed for arrival or departure date.");
+        }
+    }
+
+    private void checkStartOffset(ChronoLocalDate arrivalDate) {
+        if(arrivalDate.isBefore(LocalDate.now().plusDays(START_RESERVATION_OFFSET))) {
+            throw new ReservationRequestException("Not allowed to book for today.");
+        }
+    }
+
+    private void checkMaxDays(Temporal arrivalDate, Temporal departureDate) {
+        long days = ChronoUnit.DAYS.between(arrivalDate, departureDate);
+        if (days > MAX_DAYS_ALLOWED) {
+            throw new ReservationRequestException("Maximum 3 days of reservation is allowed.");
+        }
+    }
+
+    private void checkDatesOrder(ChronoLocalDate arrivalDate, ChronoLocalDate departureDate) {
+        if (departureDate.isBefore(arrivalDate)) {
+            throw new ReservationRequestException("Departure date before arrival date.");
+        }
     }
 }

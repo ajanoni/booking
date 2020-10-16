@@ -1,5 +1,6 @@
-package com.ajanoni.rest;
+package com.ajanoni.rest.exception.handler;
 
+import com.ajanoni.rest.exception.ErrorResponses;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
@@ -11,20 +12,7 @@ public class ExceptionHandler implements ExceptionMapper<Exception> {
     public Response toResponse(Exception exception) {
         exception.printStackTrace();
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(new ErrorResponseBody("Something unexpected happened. Try again"))
+                .entity(ErrorResponses.of("Something unexpected happened."))
                 .build();
-    }
-
-    public static final class ErrorResponseBody {
-
-        private final String message;
-
-        ErrorResponseBody(String message) {
-            this.message = message;
-        }
-
-        public String getMessage() {
-            return message;
-        }
     }
 }

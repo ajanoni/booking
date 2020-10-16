@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import java.time.LocalDate;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.hibernate.validator.constraints.Length;
 
@@ -12,19 +13,19 @@ import org.hibernate.validator.constraints.Length;
 @Schema(name = "CreateReservationCommand", description = "Create reservation")
 public class ReservationCommand {
 
-    @NotBlank
+    @NotBlank(message = "Field fullName is required.")
     @Length(max = 255)
     private final String fullName;
 
-    @NotBlank
-    @Email
+    @NotBlank(message = "Field email is required.")
+    @Email(message = "Invalid email address.")
     @Length(max = 255)
     private final String email;
 
-    @NotBlank
+    @NotNull(message = "Field arrivalDate is required.")
     private final LocalDate arrivalDate;
 
-    @NotBlank
+    @NotNull(message = "Field departureDate is required.")
     private final LocalDate departureDate;
 
     @JsonCreator

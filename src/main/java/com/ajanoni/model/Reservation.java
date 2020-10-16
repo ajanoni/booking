@@ -17,14 +17,14 @@ public class Reservation {
     }
 
     public Reservation(String customerId, LocalDate arrivalDate, LocalDate departureDate) {
-        this.id = null;
+        id = null;
         this.customerId = customerId;
         this.arrivalDate = arrivalDate;
         this.departureDate = departureDate;
     }
 
     public String getId() {
-        return customerId;
+        return id;
     }
 
     public String getCustomerId() {

@@ -16,7 +16,7 @@ public class Customer {
     }
 
     public Customer(String email, String fullName) {
-        this.id = null;
+        id = null;
         this.email = email;
         this.fullName = fullName;
     }

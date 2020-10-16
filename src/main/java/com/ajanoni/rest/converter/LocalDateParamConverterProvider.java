@@ -28,7 +28,7 @@ public class LocalDateParamConverterProvider implements ParamConverterProvider {
             try {
                 return LocalDate.parse(param, DateTimeFormatter.ISO_DATE);
             } catch (DateTimeParseException e) {
-                throw new BadRequestException(e);
+                throw new BadRequestException("Invalid date format",e);
             }
         }
 

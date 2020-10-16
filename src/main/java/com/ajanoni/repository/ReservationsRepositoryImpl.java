@@ -16,27 +16,33 @@ import javax.inject.Inject;
 @ApplicationScoped
 public class ReservationsRepositoryImpl implements ReservationRepository {
 
-    private static final String INSERT_RESERVATION = "INSERT INTO reservations (id, customer_id, arrival_date, "
-            + "departure_date) VALUES (?, ?, ?, ?);";
-    private static final String UPDATE_RESERVATION = "UPDATE reservations SET customer_id = ?, arrival_date = ?, "
-            + "departure_date = ? WHERE id = ?;";
+    private static final String INSERT_RESERVATION = "INSERT INTO reservations "
+            + "(id, customer_id, arrival_date, departure_date) VALUES (?, ?, ?, ?);";
+
+    private static final String UPDATE_RESERVATION = "UPDATE reservations "
+            + "SET customer_id = ?, arrival_date = ?, departure_date = ? WHERE id = ?;";
+
     private static final String DELETE_RESERVATION = "DELETE reservations WHERE id = ?;";
-    private static final String QUERY_GET_BY_ID = "SELECT id, customer_id, arrival_date, departure_date FROM "
-            + "reservations WHERE id = ?;";
-    private static final String QUERY_RESERVED_DATES = "SELECT arrival_date, departure_date FROM "
-            + "reservations WHERE (arrival_date >= ? AND arrival_date <= ?) "
+
+    private static final String QUERY_GET_BY_ID = "SELECT id, customer_id, arrival_date, departure_date "
+            + "FROM reservations WHERE id = ?;";
+
+    private static final String QUERY_RESERVED_DATES = "SELECT arrival_date, departure_date "
+            + "FROM reservations "
+            + "WHERE (arrival_date >= ? AND arrival_date <= ?) "
             + "OR (departure_date >= ? AND departure_date <= ?) ;";
+
     private static final String QUERY_HAS_RESERVATION = "SELECT 1 FROM reservations "
             + "WHERE (arrival_date >= ? AND arrival_date <= ?) "
-            + "OR (departure_date >= ? AND departure_date <= ?) LIMIT 1;";
+            + "OR (departure_date >= ? AND departure_date <= ?) "
+            + "LIMIT 1;";
 
+    private static final String QUERY_UUID = "SELECT UUID() AS id;";
 
     private static final String COLUMN_ID = "id";
     private static final String COLUMN_CUSTOMER_ID = "customer_id";
     private static final String COLUMN_ARRIVAL_DATE = "arrival_date";
     private static final String COLUMN_DEPARTURE_DATE = "departure_date";
-
-    private static final String QUERY_UUID = "SELECT UUID() AS id;";
 
     private final MySQLPool client;
 
@@ -50,10 +56,14 @@ public class ReservationsRepositoryImpl implements ReservationRepository {
         return SqlClientHelper.usingConnectionUni(client, connection ->
                 connection.preparedQuery(QUERY_UUID).execute().onItem().transformToUni(rowId -> {
                     String id = rowId.iterator().next().getString(COLUMN_ID);
+                    Tuple queryParams = Tuple.of(id, reservation.getCustomerId(), reservation.getArrivalDate(),
+                            reservation.getDepartureDate());
+
                     return connection.preparedQuery(INSERT_RESERVATION)
-                            .execute(Tuple.of(id, reservation.getCustomerId(), reservation.getArrivalDate(),
-                                    reservation.getDepartureDate()))
-                            .onItem().ignore().andSwitchTo(Uni.createFrom().item(id));
+                            .execute(queryParams)
+                            .onItem()
+                            .ignore()
+                            .andSwitchTo(Uni.createFrom().item(id));
                 })
         );
     }
@@ -61,48 +71,78 @@ public class ReservationsRepositoryImpl implements ReservationRepository {
     @Override
     public Uni<Boolean> delete(String id) {
         return SqlClientHelper.usingConnectionUni(client, connection ->
-                connection.preparedQuery(DELETE_RESERVATION).execute(Tuple.of(id))
-                        .onItem().ignore().andSwitchTo(Uni.createFrom().item(true))); //Must return a failure
+        {
+            Tuple queryParams = Tuple.of(id);
+
+            return connection.preparedQuery(DELETE_RESERVATION).execute(queryParams)
+                    .onItem()
+                    .ignore()
+                    .andSwitchTo(Uni.createFrom().item(true));
+        });
     }
 
     @Override
     public Uni<Reservation> update(Reservation reservation) {
         return SqlClientHelper.usingConnectionUni(client, connection ->
-                connection.preparedQuery(UPDATE_RESERVATION).execute(Tuple.of(reservation.getCustomerId(),
-                        reservation.getArrivalDate(), reservation.getDepartureDate(), reservation.getId()))
-                        .onItem().ignore().andSwitchTo(Uni.createFrom().item(reservation))); //Must return a failure
+        {
+            Tuple queryParams = Tuple.of(reservation.getCustomerId(), reservation.getArrivalDate(),
+                    reservation.getDepartureDate(), reservation.getId());
+
+            return connection.preparedQuery(UPDATE_RESERVATION)
+                    .execute(queryParams)
+                    .onItem()
+                    .ignore()
+                    .andSwitchTo(Uni.createFrom().item(reservation));
+        });
     }
 
     @Override
     public Uni<Reservation> getById(String id) {
         return SqlClientHelper.usingConnectionUni(client, conn ->
-                conn.preparedQuery(QUERY_GET_BY_ID).execute(Tuple.of(id))
-                        .onItem().transformToUni(this::getReservationUni)
+                {
+                    Tuple queryParams = Tuple.of(id);
+
+                    return conn.preparedQuery(QUERY_GET_BY_ID)
+                            .execute(queryParams)
+                            .onItem()
+                            .transformToUni(this::getReservationUni);
+                }
         );
     }
 
     @Override
     public Uni<Boolean> hasReservationBetween(LocalDate startDate, LocalDate endDate) {
         return SqlClientHelper.usingConnectionUni(client, conn ->
-                conn.preparedQuery(QUERY_HAS_RESERVATION)
-                        .execute(Tuple.of(startDate, endDate, startDate, endDate))
-                        .onItem().transformToUni(rows -> {
-                    if (rows.iterator().hasNext()) {
-                        return Uni.createFrom().item(true);
-                    }
+        {
+            Tuple queryParams = Tuple.of(startDate, endDate, startDate, endDate);
 
-                    return Uni.createFrom().nothing();
+            return conn.preparedQuery(QUERY_HAS_RESERVATION)
+                    .execute(queryParams)
+                    .onItem()
+                    .transformToUni(rows -> {
+                        if (rows.iterator().hasNext()) {
+                            return Uni.createFrom().item(true);
+                        }
 
-                }));
+                        return Uni.createFrom().nothing();
+
+                    });
+        });
     }
 
     @Override
     public Multi<LocalDate> getReservedDates(LocalDate startDate, LocalDate endDate) {
         return SqlClientHelper.usingConnectionMulti(client, conn ->
-                conn.preparedQuery(QUERY_RESERVED_DATES)
-                        .execute(Tuple.of(startDate, endDate, startDate, endDate))
-                        .onItem().transformToMulti(rows ->
-                        Multi.createFrom().emitter(emitter -> emmitSequenceDates(rows, startDate, endDate, emitter)))
+                {
+                    Tuple queryParams = Tuple.of(startDate, endDate, startDate, endDate);
+
+                    return conn.preparedQuery(QUERY_RESERVED_DATES)
+                            .execute(queryParams)
+                            .onItem()
+                            .transformToMulti(rows ->
+                                    Multi.createFrom()
+                                            .emitter(emitter -> emmitSequenceDates(rows, startDate, endDate, emitter)));
+                }
         );
     }
 
