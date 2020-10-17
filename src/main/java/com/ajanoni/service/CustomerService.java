@@ -4,14 +4,11 @@ import com.ajanoni.model.Customer;
 import com.ajanoni.repository.CustomerRepository;
 import com.ajanoni.rest.dto.ReservationCommand;
 import io.smallrye.mutiny.Uni;
-import java.time.Duration;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 @ApplicationScoped
 public class CustomerService {
-
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
 
     private final CustomerRepository customerRepository;
 
@@ -20,24 +17,31 @@ public class CustomerService {
         this.customerRepository = customerRepository;
     }
 
-    public Uni<String> updateOrCreateCustomer(ReservationCommand reservationCommand) {
-        return updateCustomer(reservationCommand).onItem().transformToUni(customer ->
-                Uni.createFrom().item(customer.getId()))
-                .ifNoItem().after(REQUEST_TIMEOUT)
-                .recoverWithUni(() -> customerRepository.save(new Customer(reservationCommand.getEmail(),
-                        reservationCommand.getFullName())));
+    Uni<String> updateOrCreateCustomer(ReservationCommand reservationCommand) {
+        return updateCustomer(reservationCommand).onItem()
+                .ifNotNull()
+                .transformToUni(customer -> Uni.createFrom().item(customer.getId())).onItem()
+                .transformToUni(customer -> {
+                    Customer newCustomer = new Customer(reservationCommand.getEmail(),
+                            reservationCommand.getFullName());
+
+                    return customerRepository.save(newCustomer);
+                });
     }
 
-    public Uni<Customer> updateCustomer(Customer customer) {
-            return customerRepository.update(customer);
+    Uni<Customer> updateCustomer(Customer customer) {
+        return customerRepository.update(customer);
     }
 
     private Uni<Customer> updateCustomer(ReservationCommand reservationCommand) {
-        return customerRepository.getByEmail(reservationCommand.getEmail()).onItem().transformToUni(customer -> {
-            Customer updateCustomer = new Customer(customer.getId(), reservationCommand.getEmail(),
-                    reservationCommand.getFullName());
-            return customerRepository.update(updateCustomer);
-        });
+        return customerRepository.getByEmail(reservationCommand.getEmail()).onItem()
+                .ifNotNull().transformToUni(customer -> {
+                    Customer updateCustomer = new Customer(customer.getId(),
+                            reservationCommand.getEmail(),
+                            reservationCommand.getFullName());
+
+                    return customerRepository.update(updateCustomer);
+                });
     }
 
 }

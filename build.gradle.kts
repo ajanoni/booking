@@ -26,6 +26,9 @@ dependencies {
     implementation("io.quarkus:quarkus-arc")
 
     implementation("com.google.guava:guava:29.0-jre")
+    implementation("org.redisson:redisson:3.13.6")
+
+    implementation("it.ozimov:embedded-redis:0.7.3") //TODO: CHANGE TO TEST RUNTIME
 
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("io.rest-assured:rest-assured")

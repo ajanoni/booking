@@ -10,15 +10,13 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 @ApplicationScoped
-public class CustomerRepositoryImpl implements CustomerRepository {
+public class CustomerRepositoryImpl extends BaseRepository  implements CustomerRepository {
 
     private static final String INSERT_CUSTOMER = "INSERT INTO customers (id, email, full_name) VALUES (?, ?, ?);";
 
     private static final String UPDATE_CUSTOMER = "UPDATE customers SET email = ?, full_name = ? WHERE id = ?;";
 
     private static final String QUERY_GET_BY_EMAIL = "SELECT id, email, full_name FROM customers WHERE email = ?;";
-
-    private static final String QUERY_UUID = "SELECT UUID() AS id;";
 
     private static final String COLUMN_ID = "id";
     private static final String COLUMN_EMAIL = "email";
@@ -39,24 +37,20 @@ public class CustomerRepositoryImpl implements CustomerRepository {
                     Tuple queryParams = Tuple.of(id, data.getEmail(), data.getFullName());
 
                     return tx.preparedQuery(INSERT_CUSTOMER)
-                            .execute(queryParams)
-                            .onItem()
-                            .ignore()
-                            .andSwitchTo(Uni.createFrom().item(id));
+                            .execute(queryParams).onItem()
+                            .transformToUni(it -> validateDbReturn(it, id));
                 })
         );
     }
 
-    public Uni<Customer> update(Customer data) {
+    public Uni<Customer> update(Customer customer) {
         return SqlClientHelper.inTransactionUni(client, tx ->
         {
-            Tuple queryParams = Tuple.of(data.getEmail(), data.getFullName(), data.getId());
+            Tuple queryParams = Tuple.of(customer.getEmail(), customer.getFullName(), customer.getId());
 
             return tx.preparedQuery(UPDATE_CUSTOMER)
-                    .execute(queryParams)
-                    .onItem()
-                    .ignore()
-                    .andSwitchTo(Uni.createFrom().item(data));
+                    .execute(queryParams).onItem()
+                    .transformToUni(it -> validateDbReturn(it, customer));
         });
     }
 
@@ -66,8 +60,7 @@ public class CustomerRepositoryImpl implements CustomerRepository {
                     Tuple queryParams = Tuple.of(email);
 
                     return conn.preparedQuery(QUERY_GET_BY_EMAIL)
-                            .execute(queryParams)
-                            .onItem()
+                            .execute(queryParams).onItem()
                             .transformToUni(this::getCustomerUni);
                 }
         );
@@ -86,6 +79,6 @@ public class CustomerRepositoryImpl implements CustomerRepository {
             return Uni.createFrom().item(customer);
         }
 
-        return Uni.createFrom().nothing();
+        return Uni.createFrom().nullItem();
     }
 }

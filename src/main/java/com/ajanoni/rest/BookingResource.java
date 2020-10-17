@@ -49,7 +49,7 @@ public class BookingResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Uni<ReservationSaveResult> createReservation(@Valid ReservationCommand reservationCommand) {
         return bookingService
-                .createReservation(reservationCommand)
+                .createReservationWithLock(reservationCommand)
                 .map(ReservationSaveResult::new);
     }
 
@@ -60,7 +60,7 @@ public class BookingResource {
     public Uni<ReservationSaveResult> updateReservation(@PathParam("id") String id,
             @Valid ReservationCommand reservationCommand) {
         return bookingService
-                .updateReservation(id, reservationCommand)
+                .updateReservationWithLock(id, reservationCommand)
                 .map(ReservationSaveResult::new);
     }
 

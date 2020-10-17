@@ -17,6 +17,6 @@ public interface ReservationRepository {
 
     Multi<LocalDate> getReservedDates(LocalDate startDate, LocalDate endDate);
 
-    Uni<Boolean> hasReservationBetween(LocalDate startDate, LocalDate endDate);
+    Uni<Boolean> hasReservationBetween(String customerId, LocalDate startDate, LocalDate endDate);
 
 }
