@@ -2,7 +2,7 @@ package com.ajanoni.rest;
 
 import com.ajanoni.rest.dto.AvailableResult;
 import com.ajanoni.rest.dto.ReservationCommand;
-import com.ajanoni.rest.dto.ReservationSaveResult;
+import com.ajanoni.rest.dto.ReservationCommandResult;
 import com.ajanoni.service.BookingService;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -47,28 +47,30 @@ public class BookingResource {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Uni<ReservationSaveResult> createReservation(@Valid ReservationCommand reservationCommand) {
+    public Uni<ReservationCommandResult> createReservation(@Valid ReservationCommand reservationCommand) {
         return bookingService
                 .createReservationWithLock(reservationCommand)
-                .map(ReservationSaveResult::new);
+                .map(ReservationCommandResult::new);
     }
 
     @PUT
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Uni<ReservationSaveResult> updateReservation(@PathParam("id") String id,
+    public Uni<ReservationCommandResult> updateReservation(@PathParam("id") String id,
             @Valid ReservationCommand reservationCommand) {
         return bookingService
                 .updateReservationWithLock(id, reservationCommand)
-                .map(ReservationSaveResult::new);
+                .map(ReservationCommandResult::new);
     }
 
     @DELETE
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Uni<Boolean> updateReservation(@PathParam("id") String id) {
-        return bookingService.deleteReservation(id);
+    public Uni<ReservationCommandResult> updateReservation(@PathParam("id") String id) {
+        return bookingService
+                .deleteReservation(id)
+                .map(ReservationCommandResult::new);
     }
 }

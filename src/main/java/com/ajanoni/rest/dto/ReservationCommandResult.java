@@ -5,11 +5,11 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @RegisterForReflection
 @Schema(name = "ReservationSaveResult", description = "Saved booking id")
-public class ReservationSaveResult {
+public class ReservationCommandResult {
 
     private final String id;
 
-    public ReservationSaveResult(String id) {
+    public ReservationCommandResult(String id) {
         this.id = id;
     }
 

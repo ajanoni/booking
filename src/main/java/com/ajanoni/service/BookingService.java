@@ -57,21 +57,52 @@ public class BookingService {
                 .recoverWithUni(Uni.createFrom().failure(() -> new ReservationConflictException(RESERVATION_CONFLICT)));
     }
 
-    public Uni<Boolean> deleteReservation(String id) {
-        return reservationRepository.delete(id);
+    public Uni<String> deleteReservation(String id) {
+        return reservationRepository.getById(id).onItem()
+                .ifNull().failWith(() -> new ReservationNotFoundException(id))
+                .onItem().transformToUni(it ->
+                        reservationRepository.delete(id).onItem()
+                                .transformToUni(deleted -> {
+                                    if (deleted) {
+                                        return Uni.createFrom().item(id);
+                                    }
+
+                                    return Uni.createFrom()
+                                            .failure(() -> new IllegalStateException("Error on deleting reservation."));
+                                }));
     }
 
     public Multi<AvailableResult> getAvailableDates(LocalDate startDate, LocalDate endDate) {
+        LocalDate localStartDate = startDate != null ? startDate : LocalDate.now();
+        LocalDate localEndDate = endDate != null ? endDate : localStartDate.plusMonths(1);
+
+        validateRequestedDates(localStartDate, localEndDate);
+
         List<LocalDate> reservedDates = reservationRepository
-                .getReservedDates(startDate, endDate)
+                .getReservedDates(localStartDate, localEndDate)
                 .collectItems().asList()
                 .await().atMost(REQUEST_TIMEOUT);
 
-        Stream<AvailableResult> resultStream = getContinuousDates(startDate, endDate).stream()
+        Stream<AvailableResult> resultStream = getContinuousDates(localStartDate, localEndDate).stream()
                 .filter(date -> !reservedDates.contains(date))
                 .map(AvailableResult::new);
 
         return Multi.createFrom().items(resultStream);
+    }
+
+    private void validateRequestedDates(LocalDate localStartDate, LocalDate localEndDate) {
+        if(localEndDate.isBefore(LocalDate.now())) {
+            throw new ReservationRequestException("Selection must start from today.");
+        }
+
+        if (localEndDate.isBefore(localStartDate)) {
+            throw new ReservationRequestException("The endDate should be equal to or after startDate.");
+        }
+
+        long monthsDiff = ChronoUnit.MONTHS.between(localStartDate, localEndDate) + 1;
+        if (monthsDiff > 6) {
+            throw new ReservationRequestException("Maximum of 6 monthsDiff of selection is allowed.");
+        }
     }
 
     private List<String> getLockDates(ReservationCommand reservationCommand) {
@@ -96,7 +127,7 @@ public class BookingService {
                     return reservationRepository.save(reservation);
                 });
 
-        return reserveExists(reservationCommand).onItem()
+        return reservationExistsBetweenDates(reservationCommand).onItem()
                 .ifNull()
                 .switchTo(createReservation);
     }
@@ -122,16 +153,16 @@ public class BookingService {
                                             .transformToUni(postUpdate -> Uni.createFrom().item(postUpdate.getId())));
                 });
 
-        return reserveExists(id, reservationCommand).onItem()
+        return reservationExistsBetweenDates(id, reservationCommand).onItem()
                 .ifNull()
                 .switchTo(updateReservation);
     }
 
-    private Uni<String> reserveExists(ReservationCommand reservationCommand) {
-        return reserveExists("", reservationCommand);
+    private Uni<String> reservationExistsBetweenDates(ReservationCommand reservationCommand) {
+        return reservationExistsBetweenDates("", reservationCommand);
     }
 
-    private Uni<String> reserveExists(String id, ReservationCommand reservationCommand) {
+    private Uni<String> reservationExistsBetweenDates(String id, ReservationCommand reservationCommand) {
         return reservationRepository.hasReservationBetween(id, reservationCommand.getArrivalDate(),
                 reservationCommand.getDepartureDate()).onItem().ifNotNull()
                 .transformToUni(hasReservation -> {

@@ -22,7 +22,7 @@ public class ReservationsRepositoryImpl extends BaseRepository implements Reserv
     private static final String UPDATE_RESERVATION = "UPDATE reservations "
             + "SET arrival_date = ?, departure_date = ? WHERE id = ?;";
 
-    private static final String DELETE_RESERVATION = "DELETE reservations WHERE id = ?;";
+    private static final String DELETE_RESERVATION = "DELETE FROM reservations WHERE id = ?;";
 
     private static final String QUERY_GET_BY_ID = "SELECT id, customer_id, arrival_date, departure_date "
             + "FROM reservations WHERE id = ?;";
@@ -158,8 +158,8 @@ public class ReservationsRepositoryImpl extends BaseRepository implements Reserv
             Row row = rowReservation.iterator().next();
             Reservation reservation = new Reservation(row.getString(COLUMN_ID),
                     row.getString(COLUMN_CUSTOMER_ID),
-                    row.getLocalDate(COLUMN_ARRIVAL_DATE),
-                    row.getLocalDate(COLUMN_DEPARTURE_DATE));
+                    row.getLocalDateTime(COLUMN_ARRIVAL_DATE).toLocalDate(),
+                    row.getLocalDateTime(COLUMN_DEPARTURE_DATE).toLocalDate());
 
             return Uni.createFrom().item(reservation);
         }
