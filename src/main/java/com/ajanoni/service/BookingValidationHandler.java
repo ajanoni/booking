@@ -16,9 +16,19 @@ public class BookingValidationHandler {
     private static final int MAX_DAYS_ALLOWED = 3;
     private static final int START_RESERVATION_OFFSET = 1;
     private static final int MONTHS_WINDOW_ALLOWED = 1;
+    private static final int MAX_QUERY_MONTHS = 6;
+
+    private static final String REQUEST_DATES_ORDER = "Departure date can not be before arrival date.";
+    private static final String REQUEST_MAX_DAYS_ALLOWED = "Maximum 3 days of reservation is allowed.";
+    private static final String REQUEST_START_DAY = "Arrival date must be after today.";
+    private static final String REQUEST_MAX_DATE = "Maximum one month ahead allowed for arrival or departure date.";
+
+    private static final String QUERY_MAXIMUM_PERIOD = "Maximum of 6 months between start date and end date allowed.";
+    private static final String QUERY_DATES_ORDER = "The end date should be equal to or after start date.";
+    private static final String QUERY_START_DAY = "Selection must start from today.";
 
     Uni<Void> validateQuery(LocalDate startDate, LocalDate endDate) {
-        checkDatesOrder(startDate, endDate, "The endDate should be equal to or after startDate.");
+        checkDatesOrder(startDate, endDate, QUERY_DATES_ORDER);
 
         List<String> messages = new ArrayList<>();
         checkDatesNotBeforeToday(startDate, endDate).ifPresent(messages::add);
@@ -32,7 +42,7 @@ public class BookingValidationHandler {
     }
 
     Uni<Void> validateRequest(LocalDate arrivalDate, LocalDate departureDate) {
-        checkDatesOrder(arrivalDate, departureDate, "Departure date before arrival date.");
+        checkDatesOrder(arrivalDate, departureDate, REQUEST_DATES_ORDER);
 
         List<String> messages = new ArrayList<>();
         checkStartOffset(arrivalDate).ifPresent(messages::add);
@@ -48,8 +58,8 @@ public class BookingValidationHandler {
 
     private Optional<String> checkMaximumSelection(LocalDate startDate, LocalDate endDate) {
         long monthsDiff = ChronoUnit.MONTHS.between(startDate, endDate) + 1;
-        if (monthsDiff > 6) {
-            return Optional.of("Maximum of 6 months between startDate and endDate allowed.");
+        if (monthsDiff > MAX_QUERY_MONTHS) {
+            return Optional.of(QUERY_MAXIMUM_PERIOD);
         }
 
         return Optional.empty();
@@ -57,7 +67,7 @@ public class BookingValidationHandler {
 
     private Optional<String> checkDatesNotBeforeToday(LocalDate startDate, LocalDate endDate) {
         if (startDate.isBefore(LocalDate.now()) || endDate.isBefore(LocalDate.now())) {
-            return Optional.of("Selection must start from today.");
+            return Optional.of(QUERY_START_DAY);
         }
 
         return Optional.empty();
@@ -66,7 +76,7 @@ public class BookingValidationHandler {
     private Optional<String> checkDatesBeforeLimit(LocalDate arrivalDate, LocalDate departureDate) {
         LocalDate oneMonthAhead = LocalDate.now().plusMonths(MONTHS_WINDOW_ALLOWED);
         if (departureDate.isAfter(oneMonthAhead) || arrivalDate.isAfter(oneMonthAhead)) {
-            return Optional.of("Maximum one month ahead allowed for arrival or departure date.");
+            return Optional.of(REQUEST_MAX_DATE);
         }
 
         return Optional.empty();
@@ -74,7 +84,7 @@ public class BookingValidationHandler {
 
     private Optional<String> checkStartOffset(LocalDate arrivalDate) {
         if (arrivalDate.isBefore(LocalDate.now().plusDays(START_RESERVATION_OFFSET))) {
-            return Optional.of("Not allowed to book for today.");
+            return Optional.of(REQUEST_START_DAY);
         }
 
         return Optional.empty();
@@ -83,7 +93,7 @@ public class BookingValidationHandler {
     private Optional<String> checkMaxDays(LocalDate arrivalDate, LocalDate departureDate) {
         long days = ChronoUnit.DAYS.between(arrivalDate, departureDate.plusDays(1));
         if (days > MAX_DAYS_ALLOWED) {
-            return Optional.of("Maximum 3 days of reservation is allowed.");
+            return Optional.of(REQUEST_MAX_DAYS_ALLOWED);
         }
 
         return Optional.empty();

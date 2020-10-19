@@ -77,6 +77,6 @@ public class CustomerRepositoryImpl extends BaseRepository  implements CustomerR
             return Uni.createFrom().item(customer);
         }
 
-        return Uni.createFrom().nullItem();
+        return Uni.createFrom().nothing();
     }
 }

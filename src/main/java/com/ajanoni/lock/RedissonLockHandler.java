@@ -2,6 +2,7 @@ package com.ajanoni.lock;
 
 import com.ajanoni.exception.LockAcquireException;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -15,8 +16,8 @@ import org.redisson.api.RedissonClient;
 @ApplicationScoped
 public class RedissonLockHandler implements LockHandler {
 
-    private static final int LEASE_TIME = 60;
-    private static final int ACQUIRE_WAIT_TIME = 60;
+    private static final int LEASE_TIME_SECONDS = 90;
+    private static final int ACQUIRE_WAIT_TIME_SECONDS = 3;
     private static final String LOCK_ACQUIRE_FAIL = "Unable to get the lock.";
     private static final String NOT_ACQUIRED = "NOT_ACQUIRED";
 
@@ -28,7 +29,13 @@ public class RedissonLockHandler implements LockHandler {
 
     @Override
     public <T> Uni<T> executeWithLock(List<String> names, Supplier<Uni<T>> supplier) {
-        Map<RPermitExpirableSemaphore, String> semaphores = getSemaphores(names, redissonClient);
+        return Uni.createFrom().item(() -> execute(names, supplier))
+                .onItem().transformToUni(it -> it)
+                .runSubscriptionOn(Infrastructure.getDefaultWorkerPool());
+    }
+
+    private <T> Uni<T> execute(List<String> names, Supplier<Uni<T>> supplier) {
+        final Map<RPermitExpirableSemaphore, String> semaphores = getSemaphores(names, redissonClient);
         try {
             boolean notAllLocked = semaphores.values().stream().anyMatch(it -> it.equals(NOT_ACQUIRED));
             if (notAllLocked) {
@@ -52,24 +59,20 @@ public class RedissonLockHandler implements LockHandler {
                     RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore(name);
                     semaphore.trySetPermits(1);
                     return Map.entry(semaphore, acquireSemaphore(semaphore));
-                }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                })
+                .takeWhile(status -> !NOT_ACQUIRED.equals(status.getValue()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private String acquireSemaphore(RPermitExpirableSemaphore sem) {
-        try {
-            String id = sem.tryAcquire(ACQUIRE_WAIT_TIME, LEASE_TIME, TimeUnit.SECONDS);
-            return Objects.isNull(id) ? NOT_ACQUIRED : id;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            Thread.currentThread().interrupt();
-        }
-        return NOT_ACQUIRED;
+        String retId = sem.tryAcquireAsync(ACQUIRE_WAIT_TIME_SECONDS, LEASE_TIME_SECONDS, TimeUnit.SECONDS).join();
+        return Objects.isNull(retId) ? NOT_ACQUIRED : retId;
     }
 
     private void releaseSemaphores(Map<RPermitExpirableSemaphore, String> semaphoresMap) {
         semaphoresMap.forEach((semaphore, id) -> {
             if (!id.equals(NOT_ACQUIRED)) {
-                semaphore.release(id);
+                semaphore.tryRelease(id);
             }
         });
     }

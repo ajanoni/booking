@@ -18,30 +18,37 @@ public class CustomerService {
     }
 
     Uni<String> updateOrCreateCustomer(ReservationCommand reservationCommand) {
-        return updateCustomer(reservationCommand).onItem()
+        return getCustomerByEmail(reservationCommand).onItem()
+                .ifNull()
+                .switchTo(() -> createCustomer(reservationCommand))
+                .onItem()
                 .ifNotNull()
-                .transformToUni(customer -> Uni.createFrom().item(customer.getId())).onItem()
-                .transformToUni(customer -> {
-                    Customer newCustomer = new Customer(reservationCommand.getEmail(),
-                            reservationCommand.getFullName());
+                .transformToUni(id -> updateCustomer(id, reservationCommand));
+    }
 
-                    return customerRepository.save(newCustomer);
-                });
+    private Uni<String> createCustomer(ReservationCommand reservationCommand) {
+        Customer newCustomer = new Customer(reservationCommand.getEmail(),
+                reservationCommand.getFullName());
+
+        return customerRepository.save(newCustomer);
     }
 
     Uni<Customer> updateCustomer(Customer customer) {
         return customerRepository.update(customer);
     }
 
-    private Uni<Customer> updateCustomer(ReservationCommand reservationCommand) {
-        return customerRepository.getByEmail(reservationCommand.getEmail()).onItem()
-                .ifNotNull().transformToUni(customer -> {
-                    Customer updateCustomer = new Customer(customer.getId(),
-                            reservationCommand.getEmail(),
-                            reservationCommand.getFullName());
+    private Uni<String> updateCustomer(String customerId, ReservationCommand reservationCommand) {
+        Customer updateCustomer = new Customer(customerId,
+                reservationCommand.getEmail(),
+                reservationCommand.getFullName());
 
-                    return customerRepository.update(updateCustomer);
-                });
+        return customerRepository.update(updateCustomer).onItem()
+                .transformToUni(customer -> Uni.createFrom().item(customer.getId()));
+    }
+
+    private Uni<String> getCustomerByEmail(ReservationCommand reservationCommand) {
+        return customerRepository.getByEmail(reservationCommand.getEmail()).onItem()
+                .transformToUni(customer -> Uni.createFrom().item(customer.getId()));
     }
 
 }
