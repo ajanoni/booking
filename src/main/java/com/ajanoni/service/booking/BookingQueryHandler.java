@@ -1,8 +1,8 @@
 package com.ajanoni.service.booking;
 
 import com.ajanoni.common.DateUtil;
-import com.ajanoni.repository.ReservationRepository;
 import com.ajanoni.dto.AvailableDatesResult;
+import com.ajanoni.repository.ReservationRepository;
 import io.smallrye.mutiny.Multi;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -30,15 +30,17 @@ public class BookingQueryHandler {
         LocalDate localStartDate = startDate != null ? startDate : LocalDate.now();
         LocalDate localEndDate = endDate != null ? endDate : localStartDate.plusMonths(1);
 
-        bookingRules.validateQuery(localStartDate, localEndDate).await().atMost(REQUEST_TIMEOUT);
+        return bookingRules.validateQuery(localStartDate, localEndDate).onItem()
+                .transformToMulti(it -> {
+                    List<LocalDate> reservedDates = getReservedDates(localStartDate, localEndDate);
 
-        List<LocalDate> reservedDates = getReservedDates(localStartDate, localEndDate);
+                    Stream<AvailableDatesResult> resultStream = DateUtil.getContinuousDates(localStartDate,
+                            localEndDate).stream()
+                            .filter(date -> !reservedDates.contains(date))
+                            .map(AvailableDatesResult::new);
 
-        Stream<AvailableDatesResult> resultStream = DateUtil.getContinuousDates(localStartDate, localEndDate).stream()
-                .filter(date -> !reservedDates.contains(date))
-                .map(AvailableDatesResult::new);
-
-        return Multi.createFrom().items(resultStream);
+                    return Multi.createFrom().items(resultStream);
+                });
     }
 
     private List<LocalDate> getReservedDates(LocalDate localStartDate, LocalDate localEndDate) {

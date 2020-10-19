@@ -10,6 +10,6 @@ public final class DateUtil {
     }
 
     public static List<LocalDate> getContinuousDates(LocalDate startDate, LocalDate endDate) {
-        return startDate.datesUntil(endDate.plusDays(1)).collect(Collectors.toList());
+        return startDate.datesUntil(endDate.plusDays(1)).collect(Collectors.toUnmodifiableList());
     }
 }
