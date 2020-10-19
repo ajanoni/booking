@@ -1,8 +1,7 @@
-package com.ajanoni.service.lock;
+package com.ajanoni.lock;
 
 import com.ajanoni.exception.LockAcquireException;
 import io.smallrye.mutiny.Uni;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -10,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
+import org.apache.commons.collections4.CollectionUtils;
 import org.redisson.Redisson;
 import org.redisson.api.RPermitExpirableSemaphore;
 import org.redisson.api.RedissonClient;
@@ -23,22 +23,22 @@ public class RedissonLockHandler implements LockHandler {
     private static final String LOCK_ACQUIRE_FAIL = "Unable to get the lock.";
     private static final String NOT_ACQUIRED = "NOT_ACQUIRED";
 
+    private final RedissonClient redissonClient;
+
+    public RedissonLockHandler(RedissonClient redissonClient) {
+        this.redissonClient = redissonClient;
+    }
+
+    @Override
     public <T> Uni<T> executeWithLock(List<String> names, Supplier<Uni<T>> supplier) {
-        System.out.println("START_TIME:" + Instant.now().toString());
-
-        Config config = new Config();
-        config.useSingleServer()
-                .setAddress("redis://localhost:6379");
-
-        RedissonClient redisson = Redisson.create(config);
-        Map<RPermitExpirableSemaphore, String> semaphores = getSemaphores(names, redisson);
+        Map<RPermitExpirableSemaphore, String> semaphores = getSemaphores(names, redissonClient);
         try {
             boolean notAllLocked = semaphores.values().stream().anyMatch(it -> it.equals(NOT_ACQUIRED));
             if (notAllLocked) {
                 releaseSemaphores(semaphores);
                 return Uni.createFrom().failure(() -> new LockAcquireException(LOCK_ACQUIRE_FAIL));
             }
-            System.out.println("MIDDLE_TIME:" + Instant.now().toString());
+
             return supplier.get()
                     .onTermination()
                     .invoke(() -> releaseSemaphores(semaphores));
@@ -75,6 +75,5 @@ public class RedissonLockHandler implements LockHandler {
                 semaphore.release(id);
             }
         });
-        System.out.println("END_TIME:" + Instant.now().toString());
     }
 }

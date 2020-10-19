@@ -27,8 +27,8 @@ dependencies {
 
     implementation("com.google.guava:guava:29.0-jre")
     implementation("org.redisson:redisson:3.13.6")
-
-    implementation("it.ozimov:embedded-redis:0.7.3") //TODO: CHANGE TO TEST RUNTIME
+    implementation("org.apache.commons:commons-collections4:4.4")
+    implementation("org.signal:embedded-redis:0.8.1")
 
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("io.rest-assured:rest-assured")

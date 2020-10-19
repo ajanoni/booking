@@ -3,19 +3,16 @@ package com.ajanoni.service;
 import com.ajanoni.exception.LockAcquireException;
 import com.ajanoni.exception.ReservationConflictException;
 import com.ajanoni.exception.ReservationNotFoundException;
-import com.ajanoni.exception.ReservationRequestException;
 import com.ajanoni.model.Customer;
 import com.ajanoni.model.Reservation;
 import com.ajanoni.repository.ReservationRepository;
 import com.ajanoni.rest.dto.AvailableResult;
 import com.ajanoni.rest.dto.ReservationCommand;
-import com.ajanoni.service.lock.RedissonLockHandler;
+import com.ajanoni.lock.LockHandler;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.time.chrono.ChronoLocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,84 +22,61 @@ import javax.inject.Inject;
 @ApplicationScoped
 public class BookingService {
 
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(1);
-    private static final int MAX_DAYS_ALLOWED = 3;
-    private static final int START_RESERVATION_OFFSET = 1;
-    private static final int MONTHS_WINDOW_ALLOWED = 1;
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(3);
     private static final String RESERVATION_CONFLICT = "Other reservation conflicts with the selected dates.";
 
     private final CustomerService customerService;
     private final ReservationRepository reservationRepository;
-    private final RedissonLockHandler lockHandler;
+    private final BookingValidationHandler bookingRules;
+    private final LockHandler lockHandler;
 
     @Inject
     public BookingService(CustomerService customerService, ReservationRepository reservationRepository,
-            RedissonLockHandler lockHandler) {
+            LockHandler lockHandler, BookingValidationHandler bookingRules) {
         this.customerService = customerService;
         this.reservationRepository = reservationRepository;
         this.lockHandler = lockHandler;
+        this.bookingRules = bookingRules;
     }
 
-    public Uni<String> createReservationWithLock(ReservationCommand reservationCommand) {
-        return lockHandler
-                .executeWithLock(getLockDates(reservationCommand), () -> createReservation(reservationCommand))
-                .onFailure(LockAcquireException.class)
-                .recoverWithUni(Uni.createFrom().failure(() -> new ReservationConflictException(RESERVATION_CONFLICT)));
+    public Uni<String> createReservationWithLock(ReservationCommand command) {
+        return bookingRules.validateRequest(command.getArrivalDate(), command.getDepartureDate()).onItem()
+                .transformToUni(it -> lockHandler
+                        .executeWithLock(getLockDates(command), () -> create(command))
+                        .onFailure(LockAcquireException.class)
+                        .recoverWithUni(Uni.createFrom()
+                                .failure(() -> new ReservationConflictException(RESERVATION_CONFLICT))));
     }
 
-    public Uni<String> updateReservationWithLock(String id, ReservationCommand reservationCommand) {
-        return lockHandler
-                .executeWithLock(getLockDates(reservationCommand), () -> updateReservation(id, reservationCommand))
-                .onFailure(LockAcquireException.class)
-                .recoverWithUni(Uni.createFrom().failure(() -> new ReservationConflictException(RESERVATION_CONFLICT)));
+    public Uni<String> updateReservationWithLock(String id, ReservationCommand command) {
+        return bookingRules.validateRequest(command.getArrivalDate(), command.getDepartureDate()).onItem()
+                .transformToUni(it -> lockHandler
+                        .executeWithLock(getLockDates(command), () -> update(id, command))
+                        .onFailure(LockAcquireException.class)
+                        .recoverWithUni(Uni.createFrom()
+                                .failure(() -> new ReservationConflictException(RESERVATION_CONFLICT))));
     }
 
     public Uni<String> deleteReservation(String id) {
         return reservationRepository.getById(id).onItem()
                 .ifNull().failWith(() -> new ReservationNotFoundException(id))
-                .onItem().transformToUni(it ->
-                        reservationRepository.delete(id).onItem()
-                                .transformToUni(deleted -> {
-                                    if (deleted) {
-                                        return Uni.createFrom().item(id);
-                                    }
-
-                                    return Uni.createFrom()
-                                            .failure(() -> new IllegalStateException("Error on deleting reservation."));
-                                }));
+                .onItem().transformToUni(reservation -> delete(reservation.getId()));
     }
 
     public Multi<AvailableResult> getAvailableDates(LocalDate startDate, LocalDate endDate) {
         LocalDate localStartDate = startDate != null ? startDate : LocalDate.now();
         LocalDate localEndDate = endDate != null ? endDate : localStartDate.plusMonths(1);
 
-        validateRequestedDates(localStartDate, localEndDate);
-
-        List<LocalDate> reservedDates = reservationRepository
-                .getReservedDates(localStartDate, localEndDate)
-                .collectItems().asList()
+        bookingRules.validateQuery(localStartDate, localEndDate)
                 .await().atMost(REQUEST_TIMEOUT);
+
+        List<LocalDate> reservedDates = getReservedDates(localStartDate, localEndDate);
 
         Stream<AvailableResult> resultStream = getContinuousDates(localStartDate, localEndDate).stream()
                 .filter(date -> !reservedDates.contains(date))
                 .map(AvailableResult::new);
 
         return Multi.createFrom().items(resultStream);
-    }
-
-    private void validateRequestedDates(LocalDate localStartDate, LocalDate localEndDate) {
-        if(localEndDate.isBefore(LocalDate.now())) {
-            throw new ReservationRequestException("Selection must start from today.");
-        }
-
-        if (localEndDate.isBefore(localStartDate)) {
-            throw new ReservationRequestException("The endDate should be equal to or after startDate.");
-        }
-
-        long monthsDiff = ChronoUnit.MONTHS.between(localStartDate, localEndDate) + 1;
-        if (monthsDiff > 6) {
-            throw new ReservationRequestException("Maximum of 6 monthsDiff of selection is allowed.");
-        }
     }
 
     private List<String> getLockDates(ReservationCommand reservationCommand) {
@@ -115,9 +89,7 @@ public class BookingService {
         return startDate.datesUntil(endDate.plusDays(1)).collect(Collectors.toList());
     }
 
-    private Uni<String> createReservation(ReservationCommand reservationCommand) {
-        reservationValidation(reservationCommand);
-
+    private Uni<String> create(ReservationCommand reservationCommand) {
         Uni<String> createReservation = customerService.updateOrCreateCustomer(reservationCommand).onItem()
                 .transformToUni(id -> {
                     Reservation reservation = new Reservation(id,
@@ -132,9 +104,7 @@ public class BookingService {
                 .switchTo(createReservation);
     }
 
-    private Uni<String> updateReservation(String id, ReservationCommand reservationCommand) {
-        reservationValidation(reservationCommand);
-
+    private Uni<String> update(String id, ReservationCommand reservationCommand) {
         Uni<String> updateReservation = reservationRepository.getById(id).onItem()
                 .ifNull().failWith(() -> new ReservationNotFoundException(id)).onItem()
                 .transformToUni(reservation -> {
@@ -158,6 +128,25 @@ public class BookingService {
                 .switchTo(updateReservation);
     }
 
+    private Uni<? extends String> delete(String id) {
+        return reservationRepository.delete(id).onItem()
+                .transformToUni(deleted -> {
+                    if (deleted) {
+                        return Uni.createFrom().item(id);
+                    }
+
+                    return Uni.createFrom()
+                            .failure(() -> new IllegalStateException("Error on deleting reservation."));
+                });
+    }
+
+    private List<LocalDate> getReservedDates(LocalDate localStartDate, LocalDate localEndDate) {
+        return reservationRepository
+                .getReservedDates(localStartDate, localEndDate)
+                .collectItems().asList()
+                .await().atMost(REQUEST_TIMEOUT);
+    }
+
     private Uni<String> reservationExistsBetweenDates(ReservationCommand reservationCommand) {
         return reservationExistsBetweenDates("", reservationCommand);
     }
@@ -172,41 +161,5 @@ public class BookingService {
 
                     return Uni.createFrom().nullItem();
                 });
-    }
-
-    private void reservationValidation(ReservationCommand reservationCommand) {
-        LocalDate arrivalDate = reservationCommand.getArrivalDate();
-        LocalDate departureDate = reservationCommand.getDepartureDate();
-
-        checkDatesOrder(arrivalDate, departureDate);
-        checkMaxDays(arrivalDate, departureDate);
-        checkStartOffset(arrivalDate);
-        checkInsideWindow(arrivalDate, departureDate);
-    }
-
-    private void checkInsideWindow(LocalDate arrivalDate, ChronoLocalDate departureDate) {
-        LocalDate oneMonthAhead = LocalDate.now().plusMonths(MONTHS_WINDOW_ALLOWED);
-        if (departureDate.isAfter(oneMonthAhead) || arrivalDate.isAfter(oneMonthAhead)) {
-            throw new ReservationRequestException("Maximum one month ahead allowed for arrival or departure date.");
-        }
-    }
-
-    private void checkStartOffset(LocalDate arrivalDate) {
-        if (arrivalDate.isBefore(LocalDate.now().plusDays(START_RESERVATION_OFFSET))) {
-            throw new ReservationRequestException("Not allowed to book for today.");
-        }
-    }
-
-    private void checkMaxDays(LocalDate arrivalDate, LocalDate departureDate) {
-        long days = ChronoUnit.DAYS.between(arrivalDate, departureDate.plusDays(1));
-        if (days > MAX_DAYS_ALLOWED) {
-            throw new ReservationRequestException("Maximum 3 days of reservation is allowed.");
-        }
-    }
-
-    private void checkDatesOrder(LocalDate arrivalDate, LocalDate departureDate) {
-        if (departureDate.isBefore(arrivalDate)) {
-            throw new ReservationRequestException("Departure date before arrival date.");
-        }
     }
 }

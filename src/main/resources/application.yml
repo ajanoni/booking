@@ -7,4 +7,9 @@ quarkus:
         url: mysql:///booking
       db-kind: mysql
   log:
-    level: DEBUG
+    level: INFO
+lock:
+  server-list: redis://localhost:26739
+  redis-embedded:
+    start-server: true
+  master: master1
