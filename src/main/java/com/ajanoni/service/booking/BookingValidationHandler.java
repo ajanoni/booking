@@ -1,4 +1,4 @@
-package com.ajanoni.service;
+package com.ajanoni.service.booking;
 
 import com.ajanoni.exception.ReservationRequestException;
 import io.smallrye.mutiny.Uni;

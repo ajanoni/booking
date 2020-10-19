@@ -1,9 +1,10 @@
 package com.ajanoni.rest;
 
-import com.ajanoni.rest.dto.AvailableResult;
-import com.ajanoni.rest.dto.ReservationCommand;
-import com.ajanoni.rest.dto.ReservationCommandResult;
-import com.ajanoni.service.BookingService;
+import com.ajanoni.dto.AvailableDatesResult;
+import com.ajanoni.dto.ReservationCommand;
+import com.ajanoni.dto.ReservationCommandResult;
+import com.ajanoni.service.booking.BookingCommandHandler;
+import com.ajanoni.service.booking.BookingQueryHandler;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import java.time.LocalDate;
@@ -22,10 +23,12 @@ import javax.ws.rs.core.MediaType;
 @Path("/booking")
 public class BookingResource {
 
-    private final BookingService bookingService;
+    private final BookingCommandHandler bookingCommand;
+    private final BookingQueryHandler queryCommand;
 
-    public BookingResource(BookingService bookingService) {
-        this.bookingService = bookingService;
+    public BookingResource(BookingCommandHandler bookingCommand, BookingQueryHandler queryCommand) {
+        this.bookingCommand = bookingCommand;
+        this.queryCommand = queryCommand;
     }
 
     @GET
@@ -39,16 +42,16 @@ public class BookingResource {
     @Path("/schedule")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Multi<AvailableResult> getAvailableDays(@QueryParam("startDate") LocalDate startDate,
+    public Multi<AvailableDatesResult> getAvailableDays(@QueryParam("startDate") LocalDate startDate,
             @QueryParam("endDate") LocalDate endDate) {
-        return bookingService.getAvailableDates(startDate, endDate);
+        return queryCommand.getAvailableDates(startDate, endDate);
     }
 
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Uni<ReservationCommandResult> createReservation(@Valid ReservationCommand reservationCommand) {
-        return bookingService
+        return bookingCommand
                 .createReservationWithLock(reservationCommand)
                 .map(ReservationCommandResult::new);
     }
@@ -59,7 +62,7 @@ public class BookingResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Uni<ReservationCommandResult> updateReservation(@PathParam("id") String id,
             @Valid ReservationCommand reservationCommand) {
-        return bookingService
+        return bookingCommand
                 .updateReservationWithLock(id, reservationCommand)
                 .map(ReservationCommandResult::new);
     }
@@ -69,7 +72,7 @@ public class BookingResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Uni<ReservationCommandResult> updateReservation(@PathParam("id") String id) {
-        return bookingService
+        return bookingCommand
                 .deleteReservation(id)
                 .map(ReservationCommandResult::new);
     }

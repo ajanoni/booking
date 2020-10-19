@@ -1,4 +1,4 @@
-package com.ajanoni.model;
+package com.ajanoni.repository.model;
 
 import java.time.LocalDate;
 

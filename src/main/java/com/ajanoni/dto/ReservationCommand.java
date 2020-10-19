@@ -1,4 +1,4 @@
-package com.ajanoni.rest.dto;
+package com.ajanoni.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import com.fasterxml.jackson.annotation.JsonCreator;

@@ -16,7 +16,7 @@ import org.redisson.api.RedissonClient;
 @ApplicationScoped
 public class RedissonLockHandler implements LockHandler {
 
-    private static final int LEASE_TIME_SECONDS = 90;
+    private static final int LEASE_TIME_SECONDS = 60;
     private static final int ACQUIRE_WAIT_TIME_SECONDS = 3;
     private static final String LOCK_ACQUIRE_FAIL = "Unable to get the lock.";
     private static final String NOT_ACQUIRED = "NOT_ACQUIRED";
@@ -64,8 +64,9 @@ public class RedissonLockHandler implements LockHandler {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private String acquireSemaphore(RPermitExpirableSemaphore sem) {
-        String retId = sem.tryAcquireAsync(ACQUIRE_WAIT_TIME_SECONDS, LEASE_TIME_SECONDS, TimeUnit.SECONDS).join();
+    private String acquireSemaphore(RPermitExpirableSemaphore expirableSemaphore) {
+        String retId = expirableSemaphore
+                .tryAcquireAsync(ACQUIRE_WAIT_TIME_SECONDS, LEASE_TIME_SECONDS, TimeUnit.SECONDS).join();
         return Objects.isNull(retId) ? NOT_ACQUIRED : retId;
     }
 

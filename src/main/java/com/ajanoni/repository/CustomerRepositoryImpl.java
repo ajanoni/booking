@@ -1,6 +1,6 @@
 package com.ajanoni.repository;
 
-import com.ajanoni.model.Customer;
+import com.ajanoni.repository.model.Customer;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.mysqlclient.MySQLPool;
 import io.vertx.mutiny.sqlclient.Row;

@@ -1,4 +1,4 @@
-package com.ajanoni.model;
+package com.ajanoni.repository.model;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 

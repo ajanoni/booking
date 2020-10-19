@@ -1,6 +1,6 @@
 package com.ajanoni.repository;
 
-import com.ajanoni.model.Reservation;
+import com.ajanoni.repository.model.Reservation;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.MultiEmitter;

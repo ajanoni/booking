@@ -1,4 +1,4 @@
-package com.ajanoni.rest.dto;
+package com.ajanoni.dto;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -7,12 +7,12 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @RegisterForReflection
 @Schema(name = "AvailableResult", description = "Available days for reservation")
-public class AvailableResult {
+public class AvailableDatesResult {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private final LocalDate date;
 
-    public AvailableResult(LocalDate date) {
+    public AvailableDatesResult(LocalDate date) {
         this.date = date;
     }
 
