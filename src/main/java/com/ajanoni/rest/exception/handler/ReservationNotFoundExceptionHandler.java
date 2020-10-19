@@ -1,7 +1,6 @@
 package com.ajanoni.rest.exception.handler;
 
 import com.ajanoni.exception.ReservationNotFoundException;
-import com.ajanoni.exception.ReservationRequestException;
 import com.ajanoni.rest.exception.ErrorResponses;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;

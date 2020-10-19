@@ -4,9 +4,6 @@ import com.ajanoni.lock.LockConfiguration;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.runtime.Startup;
 import redis.embedded.RedisCluster;
-import redis.embedded.RedisServerBuilder;
-import java.util.Arrays;
-import java.util.List;
 import javax.enterprise.inject.Produces;
 
 @Startup

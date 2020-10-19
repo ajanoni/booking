@@ -9,11 +9,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
-import org.apache.commons.collections4.CollectionUtils;
-import org.redisson.Redisson;
 import org.redisson.api.RPermitExpirableSemaphore;
 import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
 
 @ApplicationScoped
 public class RedissonLockHandler implements LockHandler {

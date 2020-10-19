@@ -1,6 +1,5 @@
 package com.ajanoni.rest;
 
-import com.ajanoni.lock.LockHandler;
 import com.ajanoni.rest.dto.AvailableResult;
 import com.ajanoni.rest.dto.ReservationCommand;
 import com.ajanoni.rest.dto.ReservationCommandResult;

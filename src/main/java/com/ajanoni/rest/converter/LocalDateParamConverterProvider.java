@@ -1,6 +1,5 @@
 package com.ajanoni.rest.converter;
 
-import com.ajanoni.exception.ReservationConflictException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.time.LocalDate;
@@ -13,6 +12,8 @@ import javax.ws.rs.ext.Provider;
 
 @Provider
 public class LocalDateParamConverterProvider implements ParamConverterProvider {
+
+    private static final String INVALID_DATE_FORMAT = "Invalid date format";
 
     @Override
     public <T> ParamConverter<T> getConverter(Class<T> rawType, Type genericType, Annotation[] annotations) {
@@ -29,7 +30,7 @@ public class LocalDateParamConverterProvider implements ParamConverterProvider {
             try {
                 return LocalDate.parse(param, DateTimeFormatter.ISO_DATE);
             } catch (DateTimeParseException e) {
-                throw new BadRequestException("Invalid date format");
+                throw new BadRequestException(INVALID_DATE_FORMAT);
             }
         }
 

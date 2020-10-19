@@ -1,7 +1,6 @@
 package com.ajanoni.service;
 
 import com.ajanoni.exception.ReservationRequestException;
-import com.ajanoni.rest.dto.ReservationCommand;
 import io.smallrye.mutiny.Uni;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;

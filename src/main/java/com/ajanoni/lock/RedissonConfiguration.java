@@ -1,7 +1,6 @@
 package com.ajanoni.lock;
 
 import io.quarkus.arc.DefaultBean;
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 import org.apache.commons.collections4.CollectionUtils;
@@ -12,17 +11,19 @@ import org.redisson.config.Config;
 @Dependent
 public class RedissonConfiguration {
 
+    private static final String MESSAGE_CONFIG_MISSING = "Redis configuration is missing";
+
     @Produces
     @DefaultBean
     public RedissonClient redissonClient(LockConfiguration lockConfig) {
         if (CollectionUtils.isEmpty(lockConfig.getServerList())) {
-            throw new IllegalStateException("Redis configuration is missing");
+            throw new IllegalStateException(MESSAGE_CONFIG_MISSING);
         }
 
         Config config = new Config();
         config.useSentinelServers()
                 .addSentinelAddress(lockConfig.getServerList().toArray(String[]::new))
-                .setMasterName("master1");
+                .setMasterName(lockConfig.getMaster());
         return Redisson.create(config);
     }
 }

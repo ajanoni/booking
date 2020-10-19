@@ -13,9 +13,7 @@ import javax.inject.Inject;
 public class CustomerRepositoryImpl extends BaseRepository  implements CustomerRepository {
 
     private static final String INSERT_CUSTOMER = "INSERT INTO customers (id, email, full_name) VALUES (?, ?, ?);";
-
     private static final String UPDATE_CUSTOMER = "UPDATE customers SET email = ?, full_name = ? WHERE id = ?;";
-
     private static final String QUERY_GET_BY_EMAIL = "SELECT id, email, full_name FROM customers WHERE email = ?;";
 
     private static final String COLUMN_ID = "id";
