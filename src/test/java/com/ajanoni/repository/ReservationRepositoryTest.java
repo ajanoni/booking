@@ -21,10 +21,10 @@ class ReservationRepositoryTest extends DbTest {
 
     @BeforeEach
     void setup() {
-        testInstance = new ReservationsRepositoryImpl(pool);
-        pool.query("DELETE FROM reservations;").executeAndAwait();
-        pool.query("DELETE FROM customers;").executeAndAwait();
-        pool.query(format("INSERT INTO customers VALUES ('%s', 'customerEmail', 'customerName');", CUSTOMER_ID))
+        testInstance = new ReservationsRepositoryImpl(getPool());
+        getPool().query("DELETE FROM reservations;").executeAndAwait();
+        getPool().query("DELETE FROM customers;").executeAndAwait();
+        getPool().query(format("INSERT INTO customers VALUES ('%s', 'customerEmail', 'customerName');", CUSTOMER_ID))
                 .executeAndAwait();
     }
 

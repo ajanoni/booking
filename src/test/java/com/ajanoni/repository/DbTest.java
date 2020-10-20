@@ -9,6 +9,7 @@ import io.vertx.sqlclient.PoolOptions;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import lombok.Getter;
 import org.junit.After;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
@@ -21,31 +22,46 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @ExtendWith(MockitoExtension.class)
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class DbTest {
+class DbTest {
+
+    private static final String DB_NAME = "booking";
+    private static final int DB_PORT = 3306;
+    private static final String DB_USER = "usertest";
+    private static final String DB_PASSWORD = "passwordtest";
+    private static final String TEST_RESOURCES = "src/test/resources";
+    private static final String DB_SCRIPT_NAME = "mysql_db_init.sql";
+    private static final String DOCKER_IMAGE = "mysql:latest";
 
     @Container
-    private static final MySQLContainer CONTAINER = new MySQLContainer()
+    private static final MySQLContainer CONTAINER =
+            new MySQLContainer(DOCKER_IMAGE)
             .withDatabaseName("booking")
             .withUsername("usertest")
             .withPassword("passwordtest");
 
-    Vertx vertx;
-    MySQLPool pool;
+    private Vertx vertx;
+
+    @Getter
+    private MySQLPool pool;
+
+
+    DbTest() {
+    }
 
     @BeforeAll
     void setUp() throws IOException {
         vertx = Vertx.vertx();
 
         MySQLConnectOptions options = new MySQLConnectOptions()
-                .setPort(CONTAINER.getMappedPort(3306))
+                .setPort(CONTAINER.getMappedPort(DB_PORT))
                 .setHost(CONTAINER.getContainerIpAddress())
-                .setDatabase("booking")
-                .setUser("usertest")
-                .setPassword("passwordtest");
+                .setDatabase(DB_NAME)
+                .setUser(DB_USER)
+                .setPassword(DB_PASSWORD);
 
         pool = MySQLPool.pool(vertx, options, new PoolOptions());
 
-        Path initFile = Path.of("", "src/test/resources").resolve("mysql_db_init.sql");
+        Path initFile = Path.of("", TEST_RESOURCES).resolve(DB_SCRIPT_NAME);
         String dbInit = Files.readString(initFile);
 
         pool.query(dbInit).executeAndAwait();

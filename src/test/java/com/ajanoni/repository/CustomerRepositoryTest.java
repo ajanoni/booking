@@ -16,12 +16,12 @@ class CustomerRepositoryTest extends DbTest {
 
     @BeforeEach
     void setup() {
-        testInstance = new CustomerRepositoryImpl(pool);
+        testInstance = new CustomerRepositoryImpl(getPool());
         customer = Customer.builder()
                 .email(EMAIL)
                 .fullName(FULL_NAME)
                 .build();
-        pool.query("DELETE FROM customers;").executeAndAwait();
+        getPool().query("DELETE FROM customers;").executeAndAwait();
     }
 
     @Test

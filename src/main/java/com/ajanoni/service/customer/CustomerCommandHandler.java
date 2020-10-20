@@ -18,11 +18,12 @@ public class CustomerCommandHandler {
 
     public Uni<String> updateOrCreateCustomer(String email, String fullName) {
         return getCustomerByEmail(email).onItem()
-                .ifNull()
-                .switchTo(() -> createCustomer(email, fullName))
-                .onItem()
                 .ifNotNull()
-                .transformToUni(id -> updateCustomer(id, email, fullName));
+                .transformToUni(id -> updateCustomer(id, email, fullName))
+                .onItem()
+                .ifNull()
+                .switchTo(() -> createCustomer(email, fullName));
+
     }
 
     public Uni<String> updateCustomer(String customerId, String email, String fullName) {

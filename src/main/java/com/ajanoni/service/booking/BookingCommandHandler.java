@@ -87,7 +87,7 @@ public class BookingCommandHandler {
         return customerService.updateOrCreateCustomer(command.getEmail(), command.getFullName()).onItem()
                 .transformToUni(id -> {
                     Reservation reservation = Reservation.builder()
-                            .id(id)
+                            .customerId(id)
                             .arrivalDate(command.getArrivalDate())
                             .departureDate(command.getDepartureDate())
                             .build();
