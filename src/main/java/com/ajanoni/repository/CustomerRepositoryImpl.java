@@ -32,7 +32,7 @@ public class CustomerRepositoryImpl extends BaseRepository  implements CustomerR
         return SqlClientHelper.inTransactionUni(client, tx ->
                 tx.preparedQuery(QUERY_UUID).execute().onItem().transformToUni(rowId -> {
                     String id = rowId.iterator().next().getString(COLUMN_ID);
-                    Tuple queryParams = Tuple.of(id, customer.getEmail(), customer.getFullName());
+                    Tuple queryParams = Tuple.of(id, customer.email(), customer.fullName());
 
                     return tx.preparedQuery(INSERT_CUSTOMER)
                             .execute(queryParams).onItem()
@@ -44,7 +44,7 @@ public class CustomerRepositoryImpl extends BaseRepository  implements CustomerR
     public Uni<Customer> update(Customer customer) {
         return SqlClientHelper.inTransactionUni(client, tx ->
         {
-            Tuple queryParams = Tuple.of(customer.getEmail(), customer.getFullName(), customer.getId());
+            Tuple queryParams = Tuple.of(customer.email(), customer.fullName(), customer.id());
 
             return tx.preparedQuery(UPDATE_CUSTOMER)
                     .execute(queryParams).onItem()
@@ -70,9 +70,11 @@ public class CustomerRepositoryImpl extends BaseRepository  implements CustomerR
                     .iterator()
                     .next();
 
-            Customer customer = new Customer(row.getString(COLUMN_ID),
-                    row.getString(COLUMN_EMAIL),
-                    row.getString(COLUMN_FULL_NAME));
+            Customer customer = Customer.builder()
+                    .id(row.getString(COLUMN_ID))
+                    .email(row.getString(COLUMN_EMAIL))
+                    .fullName(row.getString(COLUMN_FULL_NAME))
+                    .build();
 
             return Uni.createFrom().item(customer);
         }

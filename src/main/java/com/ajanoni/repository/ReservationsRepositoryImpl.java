@@ -55,9 +55,9 @@ public class ReservationsRepositoryImpl extends BaseRepository implements Reserv
         return SqlClientHelper.usingConnectionUni(client, connection ->
                 connection.preparedQuery(QUERY_UUID).execute().onItem().transformToUni(rowId -> {
                     String id = rowId.iterator().next().getString(COLUMN_ID);
-                    Tuple queryParams = Tuple.of(id, reservation.getCustomerId(),
-                            reservation.getArrivalDate(),
-                            reservation.getDepartureDate());
+                    Tuple queryParams = Tuple.of(id, reservation.customerId(),
+                            reservation.arrivalDate(),
+                            reservation.departureDate());
 
                     return connection.preparedQuery(INSERT_RESERVATION)
                             .execute(queryParams).onItem()
@@ -82,9 +82,9 @@ public class ReservationsRepositoryImpl extends BaseRepository implements Reserv
     public Uni<Reservation> update(Reservation reservation) {
         return SqlClientHelper.usingConnectionUni(client, connection ->
         {
-            Tuple queryParams = Tuple.of(reservation.getArrivalDate(),
-                    reservation.getDepartureDate(),
-                    reservation.getId());
+            Tuple queryParams = Tuple.of(reservation.arrivalDate(),
+                    reservation.departureDate(),
+                    reservation.id());
 
             return connection.preparedQuery(UPDATE_RESERVATION)
                     .execute(queryParams).onItem()
@@ -113,13 +113,8 @@ public class ReservationsRepositoryImpl extends BaseRepository implements Reserv
 
             return conn.preparedQuery(QUERY_HAS_RESERVATION)
                     .execute(queryParams).onItem()
-                    .transformToUni(rows -> {
-                        if (rows.iterator().hasNext()) {
-                            return Uni.createFrom().item(true);
-                        }
-
-                        return Uni.createFrom().item(false);
-                    });
+                    .transformToUni(rows ->
+                            rows.iterator().hasNext() ? Uni.createFrom().item(true) : Uni.createFrom().item(false));
         });
     }
 
@@ -156,10 +151,12 @@ public class ReservationsRepositoryImpl extends BaseRepository implements Reserv
     private Uni<Reservation> getReservationUni(Iterable<Row> rowReservation) {
         if (rowReservation.iterator().hasNext()) {
             Row row = rowReservation.iterator().next();
-            Reservation reservation = new Reservation(row.getString(COLUMN_ID),
-                    row.getString(COLUMN_CUSTOMER_ID),
-                    row.getLocalDateTime(COLUMN_ARRIVAL_DATE).toLocalDate(),
-                    row.getLocalDateTime(COLUMN_DEPARTURE_DATE).toLocalDate());
+            Reservation reservation = Reservation.builder()
+                    .id(row.getString(COLUMN_ID))
+                    .customerId( row.getString(COLUMN_CUSTOMER_ID))
+                    .arrivalDate(row.getLocalDateTime(COLUMN_ARRIVAL_DATE).toLocalDate())
+                    .departureDate(row.getLocalDateTime(COLUMN_DEPARTURE_DATE).toLocalDate())
+                    .build();
 
             return Uni.createFrom().item(reservation);
         }

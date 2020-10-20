@@ -57,7 +57,7 @@ public class BookingCommandHandler {
     public Uni<String> deleteReservation(String id) {
         return reservationRepository.getById(id).onItem()
                 .ifNull().failWith(() -> new ReservationNotFoundException(id))
-                .onItem().transformToUni(reservation -> delete(reservation.getId()));
+                .onItem().transformToUni(reservation -> delete(reservation.id()));
     }
 
     private List<String> getLockDates(ReservationCommand command) {
@@ -86,25 +86,29 @@ public class BookingCommandHandler {
     private Uni<String> create(ReservationCommand command) {
         return customerService.updateOrCreateCustomer(command.getEmail(), command.getFullName()).onItem()
                 .transformToUni(id -> {
-                    Reservation reservation = new Reservation(id,
-                            command.getArrivalDate(),
-                            command.getDepartureDate());
+                    Reservation reservation = Reservation.builder()
+                            .id(id)
+                            .arrivalDate(command.getArrivalDate())
+                            .departureDate(command.getDepartureDate())
+                            .build();
 
                     return reservationRepository.save(reservation);
                 });
     }
 
     private Uni<String> update(Reservation reservation, ReservationCommand reservationCommand) {
-        Reservation updatedReservation = new Reservation(reservation.getId(),
-                reservation.getCustomerId(),
-                reservationCommand.getArrivalDate(),
-                reservationCommand.getDepartureDate());
+        Reservation updatedReservation = Reservation.builder()
+                .id(reservation.id())
+                .customerId(reservation.customerId())
+                .arrivalDate(reservationCommand.getArrivalDate())
+                .departureDate(reservationCommand.getDepartureDate())
+                .build();
 
-        return customerService.updateCustomer(reservation.getCustomerId(), reservationCommand.getEmail(),
+        return customerService.updateCustomer(reservation.customerId(), reservationCommand.getEmail(),
                 reservationCommand.getFullName()).onItem()
                 .transformToUni(customer ->
                         reservationRepository.update(updatedReservation).onItem()
-                                .transformToUni(postUpdate -> Uni.createFrom().item(postUpdate.getId())));
+                                .transformToUni(postUpdate -> Uni.createFrom().item(postUpdate.id())));
     }
 
     private Uni<? extends String> delete(String id) {

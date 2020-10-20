@@ -26,22 +26,29 @@ public class CustomerCommandHandler {
     }
 
     public Uni<String> updateCustomer(String customerId, String email, String fullName) {
-        Customer updateCustomer = new Customer(customerId, email, fullName);
+        Customer updateCustomer = Customer.builder()
+                .id(customerId)
+                .email(email)
+                .fullName(fullName)
+                .build();
 
         return customerRepository.update(updateCustomer).onItem()
-                .transformToUni(customer -> Uni.createFrom().item(customer.getId()));
+                .transformToUni(customer -> Uni.createFrom().item(customer.id()));
     }
 
     private Uni<String> createCustomer(String email, String fullName) {
-        Customer newCustomer = new Customer(email, fullName);
+        Customer customer = Customer.builder()
+                .email(email)
+                .fullName(fullName)
+                .build();
 
-        return customerRepository.save(newCustomer);
+        return customerRepository.save(customer);
     }
 
     private Uni<String> getCustomerByEmail(String email) {
         return customerRepository.getByEmail(email).onItem()
                 .ifNotNull()
-                .transformToUni(customer -> Uni.createFrom().item(customer.getId()));
+                .transformToUni(customer -> Uni.createFrom().item(customer.id()));
     }
 
 }

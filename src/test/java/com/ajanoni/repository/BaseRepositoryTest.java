@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
-import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +38,7 @@ class BaseRepositoryTest {
     @Test
     void returnException() {
         given(rowSet.rowCount()).willReturn(0);
+
         assertThatThrownBy(() -> testInstance.validateDbReturn(rowSet, RETURNED_OBJECT).await().indefinitely())
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Error on db operation.");
