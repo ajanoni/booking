@@ -18,7 +18,7 @@ public class CustomerRepositoryImpl extends BaseRepository  implements CustomerR
 
     private static final String COLUMN_ID = "id";
     private static final String COLUMN_EMAIL = "email";
-    private static final String COLUMN_FULL_NAME = "fullName";
+    private static final String COLUMN_FULL_NAME = "full_name";
 
     private final MySQLPool client;
 
@@ -28,11 +28,11 @@ public class CustomerRepositoryImpl extends BaseRepository  implements CustomerR
     }
 
     @Override
-    public Uni<String> save(Customer data) {
+    public Uni<String> save(Customer customer) {
         return SqlClientHelper.inTransactionUni(client, tx ->
                 tx.preparedQuery(QUERY_UUID).execute().onItem().transformToUni(rowId -> {
                     String id = rowId.iterator().next().getString(COLUMN_ID);
-                    Tuple queryParams = Tuple.of(id, data.getEmail(), data.getFullName());
+                    Tuple queryParams = Tuple.of(id, customer.getEmail(), customer.getFullName());
 
                     return tx.preparedQuery(INSERT_CUSTOMER)
                             .execute(queryParams).onItem()
@@ -77,6 +77,6 @@ public class CustomerRepositoryImpl extends BaseRepository  implements CustomerR
             return Uni.createFrom().item(customer);
         }
 
-        return Uni.createFrom().nothing();
+        return Uni.createFrom().nullItem();
     }
 }

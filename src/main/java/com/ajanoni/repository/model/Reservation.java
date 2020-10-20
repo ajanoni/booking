@@ -38,4 +38,36 @@ public class Reservation {
     public LocalDate getDepartureDate() {
         return departureDate;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        Reservation that = (Reservation) o;
+
+        if (getId() != null ? !getId().equals(that.getId()) : that.getId() != null) {
+            return false;
+        }
+        if (!getCustomerId().equals(that.getCustomerId())) {
+            return false;
+        }
+        if (!getArrivalDate().equals(that.getArrivalDate())) {
+            return false;
+        }
+        return getDepartureDate().equals(that.getDepartureDate());
+    }
+
+    @Override
+    public int hashCode() {
+        int result = getId() != null ? getId().hashCode() : 0;
+        result = 31 * result + getCustomerId().hashCode();
+        result = 31 * result + getArrivalDate().hashCode();
+        result = 31 * result + getDepartureDate().hashCode();
+        return result;
+    }
 }

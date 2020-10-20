@@ -31,7 +31,16 @@ dependencies {
     implementation("org.signal:embedded-redis:0.8.1")
 
     testImplementation("io.quarkus:quarkus-junit5")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.1.0")
     testImplementation("io.rest-assured:rest-assured")
+    testImplementation("org.assertj:assertj-core:3.17.2")
+    testImplementation("org.mockito:mockito-core:3.5.13")
+    testImplementation("org.mockito:mockito-junit-jupiter:3.5.13")
+
+    implementation(platform( "org.testcontainers:testcontainers-bom:1.15.0-rc2"))
+    testImplementation("org.testcontainers:mysql")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("mysql:mysql-connector-java:mysql-connector-java")
 }
 
 group = "com.ajanoni"

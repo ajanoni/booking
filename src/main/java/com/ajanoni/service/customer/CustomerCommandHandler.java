@@ -40,6 +40,7 @@ public class CustomerCommandHandler {
 
     private Uni<String> getCustomerByEmail(String email) {
         return customerRepository.getByEmail(email).onItem()
+                .ifNotNull()
                 .transformToUni(customer -> Uni.createFrom().item(customer.getId()));
     }
 

@@ -33,4 +33,31 @@ public class Customer {
         return fullName;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        Customer customer = (Customer) o;
+
+        if (getId() != null ? !getId().equals(customer.getId()) : customer.getId() != null) {
+            return false;
+        }
+        if (!getEmail().equals(customer.getEmail())) {
+            return false;
+        }
+        return getFullName().equals(customer.getFullName());
+    }
+
+    @Override
+    public int hashCode() {
+        int result = getId() != null ? getId().hashCode() : 0;
+        result = 31 * result + getEmail().hashCode();
+        result = 31 * result + getFullName().hashCode();
+        return result;
+    }
 }
