@@ -17,7 +17,7 @@ public class RedisEmbeddedServer {
 
     private static final Logger LOG = Logger.getLogger(RedisEmbeddedServer.class);
 
-    private static final AtomicBoolean started = new AtomicBoolean(false);
+    private static final AtomicBoolean SERVER_STARTED = new AtomicBoolean(false);
 
     private final RedisCluster redisCluster;
 
@@ -27,16 +27,16 @@ public class RedisEmbeddedServer {
     }
 
     void onStart(@Observes StartupEvent event) {
-        if (redisCluster != null && !started.get()) {
+        if (redisCluster != null && !SERVER_STARTED.get()) {
             redisCluster.start();
             JedisUtil.sentinelHosts(redisCluster).forEach(LOG::info);
-            started.set(true);
+            SERVER_STARTED.set(true);
             LOG.info("Embedded Redis server started.");
         }
     }
 
     void onStop(@Observes ShutdownEvent event) {
-        if (redisCluster != null && started.get()) {
+        if (redisCluster != null && SERVER_STARTED.get()) {
             redisCluster.stop();
             LOG.info("Embedded Redis server stopped.");
         }
