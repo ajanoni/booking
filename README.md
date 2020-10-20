@@ -1,8 +1,10 @@
+It is a working in progress projects. 
+
 # booking project
 
 Booking system using reactive Quarkus.
 
-It is still in progress.
+Because it is using https://www.testcontainers.org/ , docker host must be installed locally or provided.
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
