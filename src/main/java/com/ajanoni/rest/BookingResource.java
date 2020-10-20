@@ -21,6 +21,8 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 @Path("/booking")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class BookingResource {
 
     private final BookingCommandHandler bookingCommand;
@@ -32,24 +34,13 @@ public class BookingResource {
     }
 
     @GET
-    @Path("hello")
-    @Produces(MediaType.TEXT_PLAIN)
-    public String hello() {
-        return "hello";
-    }
-
-    @GET
     @Path("/schedule")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
     public Multi<AvailableDatesResult> getAvailableDays(@QueryParam("startDate") LocalDate startDate,
             @QueryParam("endDate") LocalDate endDate) {
         return queryCommand.getAvailableDates(startDate, endDate);
     }
 
     @POST
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
     public Uni<ReservationCommandResult> createReservation(@Valid ReservationCommand reservationCommand) {
         return bookingCommand
                 .createReservationWithLock(reservationCommand)
@@ -58,8 +49,6 @@ public class BookingResource {
 
     @PUT
     @Path("/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
     public Uni<ReservationCommandResult> updateReservation(@PathParam("id") String id,
             @Valid ReservationCommand reservationCommand) {
         return bookingCommand
@@ -69,9 +58,7 @@ public class BookingResource {
 
     @DELETE
     @Path("/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Uni<ReservationCommandResult> updateReservation(@PathParam("id") String id) {
+    public Uni<ReservationCommandResult> deleteReservation(@PathParam("id") String id) {
         return bookingCommand
                 .deleteReservation(id)
                 .map(ReservationCommandResult::new);
