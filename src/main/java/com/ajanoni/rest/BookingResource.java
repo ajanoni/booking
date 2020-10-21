@@ -1,6 +1,6 @@
 package com.ajanoni.rest;
 
-import com.ajanoni.dto.AvailableDatesResult;
+import com.ajanoni.dto.AvailableDateResult;
 import com.ajanoni.dto.ReservationCommand;
 import com.ajanoni.dto.ReservationCommandResult;
 import com.ajanoni.service.booking.BookingCommandHandler;
@@ -35,7 +35,7 @@ public class BookingResource {
 
     @GET
     @Path("/schedule")
-    public Multi<AvailableDatesResult> getAvailableDays(@QueryParam("startDate") LocalDate startDate,
+    public Multi<AvailableDateResult> getAvailableDays(@QueryParam("startDate") LocalDate startDate,
             @QueryParam("endDate") LocalDate endDate) {
         return queryCommand.getAvailableDates(startDate, endDate);
     }

@@ -37,11 +37,13 @@ dependencies {
     testImplementation("org.assertj:assertj-core:3.17.2")
     testImplementation("org.mockito:mockito-core:3.5.13")
     testImplementation("org.mockito:mockito-junit-jupiter:3.5.13")
+    testImplementation("io.quarkus:quarkus-junit5-mockito:1.9.0.Final")
 
     implementation(platform( "org.testcontainers:testcontainers-bom:1.15.0-rc2"))
     testImplementation("org.testcontainers:mysql")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("mysql:mysql-connector-java:mysql-connector-java")
+
 }
 
 group = "com.ajanoni"
