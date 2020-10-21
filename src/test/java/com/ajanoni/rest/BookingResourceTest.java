@@ -1,6 +1,7 @@
 package com.ajanoni.rest;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.BDDMockito.given;
 
@@ -21,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 
@@ -29,6 +31,9 @@ class BookingResourceTest {
 
     private static final LocalDate START_DATE = LocalDate.of(2020, 01, 01);
     private static final LocalDate END_DATE = LocalDate.of(2020, 01, 10);
+    private static final String RESERVATION_ID = "reservationId";
+    private static final String EMAIL = "test@test.com";
+    private static final String FULL_NAME = "full name";
 
     @InjectMock
     private BookingCommandHandler bookingCommand;
@@ -60,13 +65,25 @@ class BookingResourceTest {
     }
 
     @Test
+    void getAvailableDaysBadDate() throws Exception {
+        given()
+                .queryParam("startDate", "invalid")
+                .queryParam("endDate", "2020/01/2")
+                .when()
+                .get("/booking/schedule")
+                .then()
+                .statusCode(HttpStatus.SC_BAD_REQUEST)
+                .body("errors.message[0]", is("Invalid date format."));
+    }
+
+    @Test
     void createReservation() throws Exception {
         ReservationCommand command = getReservation();
 
         given(bookingCommand.createReservationWithLock(command))
-                .willReturn(Uni.createFrom().item("reservationId"));
+                .willReturn(Uni.createFrom().item(RESERVATION_ID));
 
-        ReservationCommandResult result = new ReservationCommandResult("reservationId");
+        ReservationCommandResult result = new ReservationCommandResult(RESERVATION_ID);
         given()
                 .contentType(ContentType.JSON)
                 .body(command)
@@ -78,18 +95,89 @@ class BookingResourceTest {
     }
 
     @Test
+    void reservationRequiredFields() throws Exception {
+        ReservationCommand command = ReservationCommand.builder()
+                .arrivalDate(null)
+                .departureDate(null)
+                .email(null)
+                .fullName(null)
+                .build();
+
+        List<String> messages = List.of("Field email is required.", "Field fullName is required.",
+                "Field arrivalDate is required.", "Field departureDate is required.");
+        given()
+                .contentType(ContentType.JSON)
+                .body(command)
+                .when().
+                post("/booking")
+                .then()
+                .statusCode(HttpStatus.SC_BAD_REQUEST)
+                .body("errors.message", hasItems(messages.toArray()));
+    }
+
+    @Test
+    void invalidDate() throws Exception {
+        given()
+                .contentType(ContentType.JSON)
+                .body("{ \"arrivalDate\": \"20204141\" }")
+                .when().
+                post("/booking")
+                .then()
+                .statusCode(HttpStatus.SC_BAD_REQUEST)
+                .body("errors.message[0]", is("Invalid format for field: arrivalDate"));
+    }
+
+    @Test
+    void invalidEmail() throws Exception {
+        ReservationCommand command = ReservationCommand.builder()
+                .arrivalDate(START_DATE)
+                .departureDate(END_DATE)
+                .email("invalid email")
+                .fullName(FULL_NAME)
+                .build();
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(command)
+                .when().
+                post("/booking")
+                .then()
+                .statusCode(HttpStatus.SC_BAD_REQUEST)
+                .body("errors.message[0]", is("Invalid email address."));
+    }
+
+    @Test
+    void invalidInputLength() throws Exception {
+        ReservationCommand command = ReservationCommand.builder()
+                .arrivalDate(START_DATE)
+                .departureDate(END_DATE)
+                .email(EMAIL)
+                .fullName(StringUtils.repeat("x", 300))
+                .build();
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(command)
+                .when().
+                post("/booking")
+                .then()
+                .statusCode(HttpStatus.SC_BAD_REQUEST)
+                .body("errors.message[0]", is("length must be between 0 and 255"));
+    }
+
+    @Test
     void updateReservation() throws Exception {
         ReservationCommand command = getReservation();
 
-        given(bookingCommand.updateReservationWithLock("reservationId", command))
-                .willReturn(Uni.createFrom().item("reservationId"));
+        given(bookingCommand.updateReservationWithLock(RESERVATION_ID, command))
+                .willReturn(Uni.createFrom().item(RESERVATION_ID));
 
-        ReservationCommandResult result = new ReservationCommandResult("reservationId");
+        ReservationCommandResult result = new ReservationCommandResult(RESERVATION_ID);
         given()
                 .contentType(ContentType.JSON)
                 .body(command)
                 .when()
-                .put("/booking/{id}", "reservationId")
+                .put("/booking/{id}", RESERVATION_ID)
                 .then()
                 .statusCode(HttpStatus.SC_OK)
                 .body(is(objectMapper.writeValueAsString(result)));
@@ -99,13 +187,13 @@ class BookingResourceTest {
     void deleteReservation() throws Exception {
         ReservationCommand command = getReservation();
 
-        given(bookingCommand.deleteReservation("reservationId"))
-                .willReturn(Uni.createFrom().item("reservationId"));
+        given(bookingCommand.deleteReservation(RESERVATION_ID))
+                .willReturn(Uni.createFrom().item(RESERVATION_ID));
 
-        ReservationCommandResult result = new ReservationCommandResult("reservationId");
+        ReservationCommandResult result = new ReservationCommandResult(RESERVATION_ID);
         given()
                 .when()
-                .delete("/booking/{id}", "reservationId")
+                .delete("/booking/{id}", RESERVATION_ID)
                 .then()
                 .statusCode(HttpStatus.SC_OK)
                 .body(is(objectMapper.writeValueAsString(result)));
@@ -115,8 +203,8 @@ class BookingResourceTest {
         return ReservationCommand.builder()
                 .arrivalDate(START_DATE)
                 .departureDate(END_DATE)
-                .email("test@test.com")
-                .fullName("full name")
+                .email(EMAIL)
+                .fullName(FULL_NAME)
                 .build();
     }
 }

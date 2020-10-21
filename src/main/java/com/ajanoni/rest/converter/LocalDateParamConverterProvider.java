@@ -13,7 +13,7 @@ import javax.ws.rs.ext.Provider;
 @Provider
 public class LocalDateParamConverterProvider implements ParamConverterProvider {
 
-    private static final String INVALID_DATE_FORMAT = "Invalid date format";
+    private static final String INVALID_DATE_FORMAT = "Invalid date format.";
 
     @Override
     public <T> ParamConverter<T> getConverter(Class<T> rawType, Type genericType, Annotation[] annotations) {
