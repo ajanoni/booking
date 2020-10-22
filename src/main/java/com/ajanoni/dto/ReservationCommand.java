@@ -38,7 +38,7 @@ public class ReservationCommand {
 
     @JsonCreator
     public ReservationCommand(@JsonProperty("fullName") String fullName, @JsonProperty("email") String email,
-            @JsonProperty("arrivalDAte") LocalDate arrivalDate,
+            @JsonProperty("arrivalDate") LocalDate arrivalDate,
             @JsonProperty("departureDate") LocalDate departureDate) {
         this.fullName = fullName;
         this.email = email;

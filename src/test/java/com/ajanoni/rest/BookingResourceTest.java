@@ -95,6 +95,49 @@ class BookingResourceTest {
     }
 
     @Test
+    void updateReservation() throws Exception {
+        ReservationCommand command = getReservation();
+
+        given(bookingCommand.updateReservationWithLock(RESERVATION_ID, command))
+                .willReturn(Uni.createFrom().item(RESERVATION_ID));
+
+        ReservationCommandResult result = new ReservationCommandResult(RESERVATION_ID);
+        given()
+                .contentType(ContentType.JSON)
+                .body(command)
+                .when()
+                .put("/booking/{id}", RESERVATION_ID)
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .body(is(objectMapper.writeValueAsString(result)));
+    }
+
+    @Test
+    void deleteReservation() throws Exception {
+        ReservationCommand command = getReservation();
+
+        given(bookingCommand.deleteReservation(RESERVATION_ID))
+                .willReturn(Uni.createFrom().item(RESERVATION_ID));
+
+        ReservationCommandResult result = new ReservationCommandResult(RESERVATION_ID);
+        given()
+                .when()
+                .delete("/booking/{id}", RESERVATION_ID)
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .body(is(objectMapper.writeValueAsString(result)));
+    }
+
+    private ReservationCommand getReservation() {
+        return ReservationCommand.builder()
+                .arrivalDate(START_DATE)
+                .departureDate(END_DATE)
+                .email(EMAIL)
+                .fullName(FULL_NAME)
+                .build();
+    }
+
+    @Test
     void reservationRequiredFields() throws Exception {
         ReservationCommand command = ReservationCommand.builder()
                 .arrivalDate(null)
@@ -163,48 +206,5 @@ class BookingResourceTest {
                 .then()
                 .statusCode(HttpStatus.SC_BAD_REQUEST)
                 .body("errors.message[0]", is("length must be between 0 and 255"));
-    }
-
-    @Test
-    void updateReservation() throws Exception {
-        ReservationCommand command = getReservation();
-
-        given(bookingCommand.updateReservationWithLock(RESERVATION_ID, command))
-                .willReturn(Uni.createFrom().item(RESERVATION_ID));
-
-        ReservationCommandResult result = new ReservationCommandResult(RESERVATION_ID);
-        given()
-                .contentType(ContentType.JSON)
-                .body(command)
-                .when()
-                .put("/booking/{id}", RESERVATION_ID)
-                .then()
-                .statusCode(HttpStatus.SC_OK)
-                .body(is(objectMapper.writeValueAsString(result)));
-    }
-
-    @Test
-    void deleteReservation() throws Exception {
-        ReservationCommand command = getReservation();
-
-        given(bookingCommand.deleteReservation(RESERVATION_ID))
-                .willReturn(Uni.createFrom().item(RESERVATION_ID));
-
-        ReservationCommandResult result = new ReservationCommandResult(RESERVATION_ID);
-        given()
-                .when()
-                .delete("/booking/{id}", RESERVATION_ID)
-                .then()
-                .statusCode(HttpStatus.SC_OK)
-                .body(is(objectMapper.writeValueAsString(result)));
-    }
-
-    private ReservationCommand getReservation() {
-        return ReservationCommand.builder()
-                .arrivalDate(START_DATE)
-                .departureDate(END_DATE)
-                .email(EMAIL)
-                .fullName(FULL_NAME)
-                .build();
     }
 }
