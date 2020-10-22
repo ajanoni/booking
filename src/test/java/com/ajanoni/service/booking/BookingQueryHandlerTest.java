@@ -33,12 +33,12 @@ class BookingQueryHandlerTest {
 
     @BeforeEach
     void setup() {
+        given(bookingRules.validateQuery(START_DATE, END_DATE)).willReturn(Uni.createFrom().voidItem());
         testInstance = new BookingQueryHandler(reservationRepository, bookingRules);
     }
 
     @Test
     void getAvailableDates() {
-        given(bookingRules.validateQuery(START_DATE, END_DATE)).willReturn(Uni.createFrom().voidItem());
         given(reservationRepository.getReservedDates(START_DATE, END_DATE)).willReturn(Multi.createFrom().empty());
 
         List<LocalDate> availableList = getAvailableList();
@@ -49,7 +49,6 @@ class BookingQueryHandlerTest {
 
     @Test
     void getAvailableDatesWhenHasReservations() {
-        given(bookingRules.validateQuery(START_DATE, END_DATE)).willReturn(Uni.createFrom().voidItem());
         LocalDate reservedDateOne = START_DATE.plusDays(1);
         LocalDate reservedDateTwo = START_DATE.plusDays(2);
         given(reservationRepository.getReservedDates(START_DATE, END_DATE))

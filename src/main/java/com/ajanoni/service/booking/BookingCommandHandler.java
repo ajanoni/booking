@@ -79,8 +79,7 @@ public class BookingCommandHandler {
                 .executeWithLock(getLockDates(command), () -> update(reservation, command))
                 .onFailure(LockAcquireException.class)
                 .recoverWithUni(Uni.createFrom()
-                        .failure(() -> new ReservationConflictException(
-                                RESERVATION_CONFLICT)));
+                        .failure(() -> new ReservationConflictException(RESERVATION_CONFLICT)));
     }
 
     private Uni<String> create(ReservationCommand command) {
