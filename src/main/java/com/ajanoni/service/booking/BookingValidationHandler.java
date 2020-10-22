@@ -28,37 +28,37 @@ public class BookingValidationHandler {
     private static final String QUERY_START_DAY = "Selection must start from today.";
 
     Uni<Void> validateQuery(LocalDate startDate, LocalDate endDate) {
-        checkDatesOrder(startDate, endDate, QUERY_DATES_ORDER);
+        return checkDatesOrder(startDate, endDate, QUERY_DATES_ORDER).onItem().transformToUni(it -> {
+                    List<String> messages = new ArrayList<>();
+                    checkDatesNotBeforeToday(startDate, endDate).ifPresent(messages::add);
+                    checkMaximumSelection(startDate, endDate).ifPresent(messages::add);
 
-        List<String> messages = new ArrayList<>();
-        checkDatesNotBeforeToday(startDate, endDate).ifPresent(messages::add);
-        checkMaximumSelection(startDate, endDate).ifPresent(messages::add);
-
-        if (CollectionUtils.isNotEmpty(messages)) {
-            return Uni.createFrom().failure(() -> new ReservationRequestException(messages));
-        }
-
-        return Uni.createFrom().voidItem();
+                    if (CollectionUtils.isNotEmpty(messages)) {
+                        return Uni.createFrom().failure(() -> new ReservationRequestException(messages));
+                    }
+                    return Uni.createFrom().voidItem();
+                }
+        );
     }
 
     Uni<Void> validateRequest(LocalDate arrivalDate, LocalDate departureDate) {
-        checkDatesOrder(arrivalDate, departureDate, REQUEST_DATES_ORDER);
+        return checkDatesOrder(arrivalDate, departureDate, REQUEST_DATES_ORDER).onItem().transformToUni(it -> {
+            List<String> messages = new ArrayList<>();
+            checkStartOffset(arrivalDate).ifPresent(messages::add);
+            checkMaxDays(arrivalDate, departureDate).ifPresent(messages::add);
+            checkDatesBeforeLimit(arrivalDate, departureDate).ifPresent(messages::add);
 
-        List<String> messages = new ArrayList<>();
-        checkStartOffset(arrivalDate).ifPresent(messages::add);
-        checkMaxDays(arrivalDate, departureDate).ifPresent(messages::add);
-        checkDatesBeforeLimit(arrivalDate, departureDate).ifPresent(messages::add);
+            if (CollectionUtils.isNotEmpty(messages)) {
+                return Uni.createFrom().failure(() -> new ReservationRequestException(messages));
+            }
 
-        if (CollectionUtils.isNotEmpty(messages)) {
-            return Uni.createFrom().failure(() -> new ReservationRequestException(messages));
-        }
-
-        return Uni.createFrom().voidItem();
+            return Uni.createFrom().voidItem();
+        });
     }
 
     private Optional<String> checkMaximumSelection(LocalDate startDate, LocalDate endDate) {
-        long monthsDiff = ChronoUnit.MONTHS.between(startDate, endDate) + 1;
-        if (monthsDiff > MAX_QUERY_MONTHS) {
+        long monthsDiff = ChronoUnit.MONTHS.between(startDate, endDate);
+        if (monthsDiff >= MAX_QUERY_MONTHS) {
             return Optional.of(QUERY_MAXIMUM_PERIOD);
         }
 
@@ -99,9 +99,11 @@ public class BookingValidationHandler {
         return Optional.empty();
     }
 
-    private void checkDatesOrder(LocalDate arrivalDate, LocalDate departureDate, String message) {
+    private Uni<Void> checkDatesOrder(LocalDate arrivalDate, LocalDate departureDate, String message) {
         if (departureDate.isBefore(arrivalDate)) {
-            throw new ReservationRequestException(message);
+            return Uni.createFrom().failure(() -> new ReservationRequestException(message));
         }
+
+        return Uni.createFrom().voidItem();
     }
 }

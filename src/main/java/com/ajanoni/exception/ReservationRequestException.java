@@ -4,6 +4,7 @@ import java.util.List;
 
 public class ReservationRequestException extends RuntimeException {
 
+    private static final long serialVersionUID = -153319434432402663L;
     private final List<String> messages;
 
     public ReservationRequestException(String message) {
