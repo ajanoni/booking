@@ -1,6 +1,7 @@
 package com.ajanoni.lock;
 
 import io.quarkus.arc.DefaultBean;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 import org.apache.commons.collections4.CollectionUtils;
@@ -9,6 +10,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
 @Dependent
+@RegisterForReflection
 public class RedissonConfiguration {
 
     private static final String MESSAGE_CONFIG_MISSING = "Redis configuration is missing";

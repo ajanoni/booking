@@ -8,6 +8,8 @@ quarkus:
       db-kind: mysql
   log:
     level: INFO
+  native:
+    additional-build-args: "--allow-incomplete-classpath,--enable-all-security-services,-H:EnableURLProtocols=http\\,https"
 lock:
   server-list: redis://localhost:26739
   redis-embedded:

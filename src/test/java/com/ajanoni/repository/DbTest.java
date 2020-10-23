@@ -2,6 +2,7 @@ package com.ajanoni.repository;
 
 import static java.lang.String.format;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.mysqlclient.MySQLPool;
 import io.vertx.mysqlclient.MySQLConnectOptions;
@@ -22,6 +23,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @ExtendWith(MockitoExtension.class)
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@RegisterForReflection
 class DbTest {
 
     private static final String DB_NAME = "booking";

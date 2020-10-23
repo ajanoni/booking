@@ -2,7 +2,6 @@ package com.ajanoni.repository.model;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import java.time.LocalDate;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 import lombok.experimental.Accessors;

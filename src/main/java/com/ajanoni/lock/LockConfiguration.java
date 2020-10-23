@@ -1,10 +1,12 @@
 package com.ajanoni.lock;
 
 import io.quarkus.arc.config.ConfigProperties;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import java.util.Collections;
 import java.util.List;
 
 @ConfigProperties(prefix = "lock")
+@RegisterForReflection
 public class LockConfiguration {
 
     private RedisEmbedded redisEmbedded;
