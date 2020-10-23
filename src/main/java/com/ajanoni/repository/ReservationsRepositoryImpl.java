@@ -106,10 +106,10 @@ public class ReservationsRepositoryImpl extends BaseRepository implements Reserv
     }
 
     @Override
-    public Uni<Boolean> hasReservationBetween(String id, LocalDate startDate, LocalDate endDate) {
+    public Uni<Boolean> hasReservationBetween(String reservationId, LocalDate startDate, LocalDate endDate) {
         return SqlClientHelper.usingConnectionUni(client, conn ->
         {
-            Tuple queryParams = Tuple.of(id, startDate, endDate, startDate, endDate);
+            Tuple queryParams = Tuple.of(reservationId, startDate, endDate, startDate, endDate);
 
             return conn.preparedQuery(QUERY_HAS_RESERVATION)
                     .execute(queryParams).onItem()

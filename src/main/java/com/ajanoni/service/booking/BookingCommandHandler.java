@@ -37,9 +37,8 @@ public class BookingCommandHandler {
 
     public Uni<String> createReservationWithLock(ReservationCommand command) {
         return bookingRules.validateRequest(command.getArrivalDate(), command.getDepartureDate()).onItem()
-                .transformToUni(it -> reservationExistsBetweenDates(command).onItem()
-                        .ifNull()
-                        .switchTo(createWithLock(command)));
+                .transformToUni(isValid -> reservationExistsBetweenDates(command).onItem()
+                        .transformToUni(noConflict -> createWithLock(command)));
     }
 
     public Uni<String> updateReservationWithLock(String id, ReservationCommand command) {
@@ -48,10 +47,8 @@ public class BookingCommandHandler {
                         .ifNull()
                         .failWith(() -> new ReservationNotFoundException(id)).onItem()
                         .ifNotNull()
-                        .transformToUni(reservation -> reservationExistsBetweenDates(id, command)
-                                .onItem()
-                                .ifNull()
-                                .switchTo(updateWithLock(reservation, command))));
+                        .transformToUni(reservation -> reservationExistsBetweenDates(id, command).onItem()
+                                .transformToUni(noConflict -> updateWithLock(reservation, command))));
     }
 
     public Uni<String> deleteReservation(String id) {
