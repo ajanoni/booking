@@ -125,9 +125,7 @@ class BookingCommandHandlerTest {
 
     @Test
     void updateReservationWithLock() {
-        given(bookingRules.validateRequest(UPDATED_START_DATE, UPDATED_END_DATE))
-                .willReturn(Uni.createFrom().voidItem());
-        given(reservationRepository.getById(ID)).willReturn(Uni.createFrom().item(UPDATED_RESERVATION));
+        mockUpdateValidation();
         given(reservationRepository.hasReservationBetween(ID, UPDATE_COMMAND.getArrivalDate(),
                 UPDATE_COMMAND.getDepartureDate())).willReturn(Uni.createFrom().item(false));
         given(lockHandler.executeWithLock(eq(getLockIdsUpdate()), supplierCaptor.capture()))
@@ -146,9 +144,7 @@ class BookingCommandHandlerTest {
 
     @Test
     void notUpdateWhenConflict() {
-        given(bookingRules.validateRequest(UPDATED_START_DATE, UPDATED_END_DATE))
-                .willReturn(Uni.createFrom().voidItem());
-        given(reservationRepository.getById(ID)).willReturn(Uni.createFrom().item(UPDATED_RESERVATION));
+        mockUpdateValidation();
         given(reservationRepository.hasReservationBetween(ID, UPDATED_START_DATE, UPDATED_END_DATE))
                 .willReturn(Uni.createFrom().item(true));
 
@@ -196,4 +192,9 @@ class BookingCommandHandlerTest {
         return lockDates;
     }
 
+    private void mockUpdateValidation() {
+        given(bookingRules.validateRequest(UPDATED_START_DATE, UPDATED_END_DATE))
+                .willReturn(Uni.createFrom().voidItem());
+        given(reservationRepository.getById(ID)).willReturn(Uni.createFrom().item(UPDATED_RESERVATION));
+    }
 }
