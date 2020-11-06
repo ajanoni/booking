@@ -1,4 +1,4 @@
-It is a working in progress projects. 
+It is a working in progress project. 
 
 # booking project
 
